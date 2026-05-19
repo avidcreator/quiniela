@@ -52,11 +52,11 @@ function PlayerRow({ entry: e }: { entry: LeaderboardEntry }) {
   const losses = Math.max(0, e.matches_played - e.wins);
   const podiumRing =
     e.rank === 1
-      ? "ring-amber-400"
+      ? "ring-primary"
       : e.rank === 2
-        ? "ring-slate-300"
+        ? "ring-foreground"
         : e.rank === 3
-          ? "ring-orange-400"
+          ? "ring-muted-foreground/60"
           : "ring-transparent";
 
   return (
@@ -130,7 +130,7 @@ function Stat({
     tone === "primary"
       ? "text-primary"
       : tone === "accent"
-        ? "text-accent-foreground"
+        ? "text-foreground"
         : "text-muted-foreground";
   return (
     <div>

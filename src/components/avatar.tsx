@@ -1,15 +1,12 @@
 const PALETTE = [
-  // warm-themed palette, tuned for white text contrast
-  "bg-rose-500",
-  "bg-orange-500",
-  "bg-amber-500",
-  "bg-red-500",
-  "bg-pink-500",
-  "bg-fuchsia-500",
-  "bg-yellow-600",
-  "bg-orange-600",
-  "bg-rose-600",
-  "bg-red-600",
+  // monochrome scale — Nike-style, no chromatic variation
+  "bg-zinc-900",
+  "bg-zinc-800",
+  "bg-zinc-700",
+  "bg-neutral-900",
+  "bg-neutral-700",
+  "bg-stone-900",
+  "bg-stone-700",
 ] as const;
 
 function hash(str: string): number {

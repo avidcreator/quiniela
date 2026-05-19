@@ -191,7 +191,7 @@ function PredictionGroup({
     tone === "primary"
       ? "text-primary"
       : tone === "accent"
-        ? "text-accent-foreground"
+        ? "text-foreground"
         : "text-muted-foreground";
 
   return (

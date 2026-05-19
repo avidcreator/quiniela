@@ -4,22 +4,22 @@ import type { LeaderboardEntry } from "@/lib/stats";
 
 const SLOT_STYLES = {
   1: {
-    ring: "ring-amber-400",
-    bg: "bg-gradient-to-b from-amber-400/30 via-amber-200/10 to-transparent",
+    ring: "ring-primary",
+    bg: "bg-gradient-to-b from-primary/15 to-transparent",
     height: "h-28",
-    rank: "text-amber-500",
+    rank: "text-primary",
   },
   2: {
-    ring: "ring-slate-300",
-    bg: "bg-gradient-to-b from-slate-300/30 via-slate-200/10 to-transparent",
+    ring: "ring-foreground",
+    bg: "bg-gradient-to-b from-foreground/10 to-transparent",
     height: "h-20",
-    rank: "text-slate-400",
+    rank: "text-foreground",
   },
   3: {
-    ring: "ring-orange-400",
-    bg: "bg-gradient-to-b from-orange-400/30 via-orange-200/10 to-transparent",
+    ring: "ring-muted-foreground/60",
+    bg: "bg-gradient-to-b from-muted-foreground/10 to-transparent",
     height: "h-16",
-    rank: "text-orange-500",
+    rank: "text-muted-foreground",
   },
 } as const;
 

@@ -38,11 +38,11 @@ export default async function JugadorPage({
   const losses = Math.max(0, stats.matches_played - stats.wins);
   const podiumRing =
     rank === 1
-      ? "ring-amber-400"
+      ? "ring-primary"
       : rank === 2
-        ? "ring-slate-300"
+        ? "ring-foreground"
         : rank === 3
-          ? "ring-orange-400"
+          ? "ring-muted-foreground/60"
           : "ring-border";
 
   return (
@@ -196,7 +196,7 @@ function Stat({
     tone === "primary"
       ? "text-primary"
       : tone === "accent"
-        ? "text-accent-foreground"
+        ? "text-foreground"
         : "text-foreground";
   return (
     <div className="rounded-2xl border bg-card p-4">
