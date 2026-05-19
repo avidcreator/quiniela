@@ -36,7 +36,7 @@ export default async function Home() {
 
   const leaderboard = computeLeaderboard(snap);
   const top3 = leaderboard.slice(0, 3);
-  const rest = leaderboard.slice(3, 8);
+  const rest = leaderboard.slice(3);
   const completedCount = snap.matches.filter(isCompleted).length;
 
   return (

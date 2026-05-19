@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Admin · Quiniela 26" };
+export const metadata = { title: "Admin · FIFA World Cup 2026" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {

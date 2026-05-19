@@ -5,7 +5,7 @@ import { Avatar } from "@/components/avatar";
 import { RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Jugadores · Quiniela 26" };
+export const metadata = { title: "Jugadores · FIFA World Cup 2026" };
 
 export default async function JugadoresPage() {
   const snap = await loadSnapshot();

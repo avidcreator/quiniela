@@ -22,7 +22,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Quiniela 26 — Mundial 2026",
+  title: "FIFA World Cup 2026",
   description: "La quiniela familiar para el Mundial 2026.",
 };
 

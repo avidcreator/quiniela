@@ -6,7 +6,7 @@ import {
 } from "@/components/match-card";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Partidos · Quiniela 26" };
+export const metadata = { title: "Partidos · FIFA World Cup 2026" };
 
 export default async function PartidosPage() {
   const snap = await loadSnapshot();

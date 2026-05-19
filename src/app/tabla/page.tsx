@@ -5,7 +5,7 @@ import { Avatar } from "@/components/avatar";
 import { RankDelta, RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tabla · Quiniela 26" };
+export const metadata = { title: "Tabla · FIFA World Cup 2026" };
 
 export default async function TablaPage() {
   const snap = await loadSnapshot();

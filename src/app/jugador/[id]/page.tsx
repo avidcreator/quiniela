@@ -18,7 +18,7 @@ export async function generateMetadata({
   const { id } = await params;
   const snap = await loadSnapshot();
   const player = snap.players.find((p) => p.id === id);
-  return { title: player ? `${player.name} · Quiniela 26` : "Jugador" };
+  return { title: player ? `${player.name} · FIFA World Cup 2026` : "Jugador" };
 }
 
 export default async function JugadorPage({

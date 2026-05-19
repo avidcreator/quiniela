@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
 import { isAdmin } from "@/lib/admin/session";
 
-export const metadata = { title: "Admin · Quiniela 26" };
+export const metadata = { title: "Admin · FIFA World Cup 2026" };
 
 export default async function LoginPage() {
   if (await isAdmin()) redirect("/admin");

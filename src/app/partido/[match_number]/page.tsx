@@ -14,7 +14,7 @@ export async function generateMetadata({
   params: Promise<{ match_number: string }>;
 }) {
   const { match_number } = await params;
-  return { title: `Partido #${match_number} · Quiniela 26` };
+  return { title: `Partido #${match_number} · FIFA World Cup 2026` };
 }
 
 export default async function PartidoPage({

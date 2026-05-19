@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -7,14 +8,20 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="group inline-flex items-center gap-2 font-heading text-lg font-bold tracking-tight"
+          className="group inline-flex items-center gap-3 font-heading text-base font-black uppercase tracking-tight"
         >
-          <span className="inline-flex size-8 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:-rotate-6">
-            ⚽
+          <span className="inline-flex h-10 w-7 items-center justify-center overflow-hidden rounded-sm bg-white p-0.5 ring-1 ring-border">
+            <Image
+              src="/wc26-logo.png"
+              alt="FIFA World Cup 2026"
+              width={28}
+              height={40}
+              priority
+              className="h-full w-auto object-contain"
+            />
           </span>
-          <span>
-            Quiniela <span className="text-primary">26</span>
-          </span>
+          <span className="hidden sm:inline">FIFA World Cup 2026</span>
+          <span className="sm:hidden">WC 2026</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           <Link
