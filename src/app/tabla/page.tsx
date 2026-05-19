@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
+import { RankDelta, RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tabla · Quiniela 26" };
@@ -51,21 +52,27 @@ export default async function TablaPage() {
               className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className={`inline-flex size-9 items-center justify-center rounded-full font-heading text-sm font-bold tabular-nums ${podium}`}
-                >
-                  {e.rank}
-                </span>
-                <div className="min-w-0">
-                  <Link
-                    href={`/jugador/${e.player_id}`}
-                    className="block truncate font-medium hover:underline"
+                <div className="flex flex-col items-center gap-1">
+                  <span
+                    className={`inline-flex size-9 items-center justify-center rounded-full font-heading text-sm font-bold tabular-nums ${podium}`}
                   >
-                    {e.name}
-                  </Link>
+                    {e.rank}
+                  </span>
+                  <RankDelta current={e.rank} prev={e.prev_rank} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/jugador/${e.player_id}`}
+                      className="truncate font-medium hover:underline"
+                    >
+                      {e.name}
+                    </Link>
+                    <RecentStrikes count={e.recent_strikes} />
+                  </div>
                   <div className="text-xs text-muted-foreground">
-                    {e.strikes} cantada{e.strikes === 1 ? "" : "s"} ·{" "}
-                    {e.wins} acierto{e.wins === 1 ? "" : "s"}
+                    {e.strikes} cantada{e.strikes === 1 ? "" : "s"} · {e.wins}{" "}
+                    acierto{e.wins === 1 ? "" : "s"}
                   </div>
                 </div>
               </div>

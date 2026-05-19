@@ -3,6 +3,7 @@ import { loadSnapshot, isCompleted, type Match } from "@/lib/data";
 import { computeLeaderboard, computeMatchPredictions } from "@/lib/stats";
 import { KickoffDate } from "@/components/kickoff-date";
 import { ScorePill } from "@/components/score-pill";
+import { RankDelta, RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
 
@@ -86,16 +87,20 @@ export default async function Home() {
                 key={e.player_id}
                 className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold text-primary tabular-nums">
                     {e.rank}
                   </span>
-                  <Link
-                    href={`/jugador/${e.player_id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {e.name}
-                  </Link>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Link
+                      href={`/jugador/${e.player_id}`}
+                      className="truncate font-medium hover:underline"
+                    >
+                      {e.name}
+                    </Link>
+                    <RankDelta current={e.rank} prev={e.prev_rank} />
+                    <RecentStrikes count={e.recent_strikes} />
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-heading text-lg font-bold tabular-nums">
