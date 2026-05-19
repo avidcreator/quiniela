@@ -1,0 +1,69 @@
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import { removePlayerAction } from "./actions";
+import { RemovePlayerButton } from "./remove-button";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Jugadores · Admin" };
+
+export default async function PlayersPage() {
+  const supabase = createServiceClient();
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, name, created_at")
+    .order("name", { ascending: true });
+
+  return (
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">
+            Jugadores
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Agrega o quita jugadores en cualquier momento del torneo.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/jugadores/nuevo">+ Nuevo jugador</Link>
+        </Button>
+      </header>
+
+      {players && players.length > 0 ? (
+        <ul className="divide-y rounded-2xl border bg-card">
+          {players.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
+            >
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-9 items-center justify-center rounded-full bg-accent/40 font-heading text-sm font-semibold text-accent-foreground">
+                  {p.name.slice(0, 1).toUpperCase()}
+                </span>
+                <div>
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Agregado el {new Intl.DateTimeFormat("es-MX", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    }).format(new Date(p.created_at))}
+                  </div>
+                </div>
+              </div>
+              <form action={removePlayerAction}>
+                <input type="hidden" name="id" value={p.id} />
+                <RemovePlayerButton name={p.name} />
+              </form>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-2xl border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
+          Aún no hay jugadores. Agrega el primero.
+        </p>
+      )}
+    </div>
+  );
+}
