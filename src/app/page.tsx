@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { loadSnapshot, isCompleted, type Match } from "@/lib/data";
+import { loadSnapshot, isCompleted } from "@/lib/data";
 import { computeLeaderboard, computeMatchPredictions } from "@/lib/stats";
-import { KickoffDate } from "@/components/kickoff-date";
-import { ScorePill } from "@/components/score-pill";
+import { Avatar } from "@/components/avatar";
+import { Podium } from "@/components/podium";
+import {
+  RecentResultCard,
+  UpcomingMatchCard,
+} from "@/components/match-card";
 import { RankDelta, RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +14,6 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const snap = await loadSnapshot();
   const hasData = snap.matches.length > 0 && snap.players.length > 0;
-
   if (!hasData) return <EmptyHome />;
 
   const now = Date.now();
@@ -24,73 +27,41 @@ export default async function Home() {
 
   const recent = snap.matches
     .filter(isCompleted)
-    .sort(
-      (a, b) =>
-        new Date(b.kickoff_at).getTime() - new Date(a.kickoff_at).getTime(),
-    )
+    .sort((a, b) => {
+      const at = new Date(a.completed_at ?? a.kickoff_at).getTime();
+      const bt = new Date(b.completed_at ?? b.kickoff_at).getTime();
+      return bt - at;
+    })
     .slice(0, 6);
 
   const leaderboard = computeLeaderboard(snap);
-  const topFive = leaderboard.slice(0, 5);
+  const top3 = leaderboard.slice(0, 3);
+  const rest = leaderboard.slice(3, 8);
+  const completedCount = snap.matches.filter(isCompleted).length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-      <Hero
-        completed={recent.length === 0 ? 0 : snap.matches.filter(isCompleted).length}
-        players={snap.players.length}
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <SectionHeader
+        eyebrow={`Jornada ${completedCount}/72`}
+        title="Tabla"
+        action={<HeaderLink href="/tabla">Ver completa</HeaderLink>}
       />
 
-      {upcoming.length > 0 ? (
-        <Section title="Próximos partidos">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {upcoming.map((m) => (
-              <Link
-                key={m.match_number}
-                href={`/partido/${m.match_number}`}
-                className="group rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Partido #{m.match_number}</span>
-                  <KickoffDate iso={m.kickoff_at} />
-                </div>
-                <div className="mt-2 font-heading text-lg font-semibold">
-                  {m.team_a}{" "}
-                  <span className="text-muted-foreground">vs</span> {m.team_b}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </Section>
-      ) : null}
+      <div className="mt-4 rounded-3xl border bg-card p-6 sm:p-8">
+        <Podium top3={top3} />
 
-      {recent.length > 0 ? (
-        <Section
-          title="Últimos resultados"
-          action={<SectionLink href="/partidos">Ver todos →</SectionLink>}
-        >
-          <ul className="space-y-3">
-            {recent.map((m) => (
-              <RecentResultRow key={m.match_number} match={m} snap={snap} />
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-
-      {topFive.length > 0 ? (
-        <Section
-          title="Tabla"
-          action={<SectionLink href="/tabla">Ver completa →</SectionLink>}
-        >
-          <ol className="divide-y rounded-2xl border bg-card">
-            {topFive.map((e) => (
+        {rest.length > 0 ? (
+          <ul className="mt-8 divide-y border-t pt-4">
+            {rest.map((e) => (
               <li
                 key={e.player_id}
-                className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
+                className="flex items-center justify-between gap-3 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold text-primary tabular-nums">
+                  <span className="w-6 text-center font-heading text-sm font-black tabular-nums text-muted-foreground">
                     {e.rank}
                   </span>
+                  <Avatar name={e.name} size="sm" />
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <Link
                       href={`/jugador/${e.player_id}`}
@@ -102,66 +73,82 @@ export default async function Home() {
                     <RecentStrikes count={e.recent_strikes} />
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-heading text-lg font-bold tabular-nums">
+                <div className="flex items-baseline gap-1">
+                  <span className="font-heading text-lg font-black tabular-nums">
                     {e.points}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {e.strikes} cantada{e.strikes === 1 ? "" : "s"}
-                  </div>
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    pts
+                  </span>
                 </div>
               </li>
             ))}
-          </ol>
-        </Section>
+          </ul>
+        ) : null}
+      </div>
+
+      {recent.length > 0 ? (
+        <section className="mt-12">
+          <SectionHeader
+            title="Últimos resultados"
+            action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
+          />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {recent.map((m) => (
+              <RecentResultCard
+                key={m.match_number}
+                match={m}
+                predictions={computeMatchPredictions(snap, m.match_number)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {upcoming.length > 0 ? (
+        <section className="mt-12">
+          <SectionHeader
+            title="Próximos partidos"
+            action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
+          />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {upcoming.map((m) => (
+              <UpcomingMatchCard key={m.match_number} match={m} />
+            ))}
+          </div>
+        </section>
       ) : null}
     </div>
   );
 }
 
-function Hero({ completed, players }: { completed: number; players: number }) {
-  return (
-    <section className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/15 via-background to-accent/20 px-6 py-10 sm:px-12 sm:py-14">
-      <div className="absolute -top-12 -right-12 size-44 rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute -bottom-16 -left-10 size-56 rounded-full bg-accent/25 blur-3xl" />
-      <div className="relative">
-        <span className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          <span className="inline-block size-1.5 rounded-full bg-primary" />
-          Mundial 2026
-        </span>
-        <h1 className="mt-5 font-heading text-3xl font-bold tracking-tight sm:text-5xl">
-          Quiniela <span className="text-primary">familiar</span>.
-        </h1>
-        <p className="mt-3 max-w-xl text-base text-muted-foreground sm:text-lg">
-          {completed} de 72 partidos jugados · {players} jugador
-          {players === 1 ? "" : "es"} en el ruedo.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function Section({
+function SectionHeader({
+  eyebrow,
   title,
   action,
-  children,
 }: {
+  eyebrow?: string;
   title: string;
   action?: React.ReactNode;
-  children: React.ReactNode;
 }) {
   return (
-    <section className="mt-12">
-      <div className="mb-4 flex items-end justify-between">
-        <h2 className="font-heading text-xl font-bold tracking-tight">{title}</h2>
-        {action}
+    <div className="flex items-end justify-between gap-3">
+      <div>
+        {eyebrow ? (
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            {eyebrow}
+          </div>
+        ) : null}
+        <h2 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
+          {title}
+        </h2>
       </div>
-      {children}
-    </section>
+      {action}
+    </div>
   );
 }
 
-function SectionLink({
+function HeaderLink({
   href,
   children,
 }: {
@@ -171,75 +158,26 @@ function SectionLink({
   return (
     <Link
       href={href}
-      className="text-sm font-medium text-primary hover:underline"
+      className="group inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
     >
       {children}
+      <span className="transition-transform group-hover:translate-x-0.5">→</span>
     </Link>
-  );
-}
-
-function RecentResultRow({
-  match,
-  snap,
-}: {
-  match: Match;
-  snap: Awaited<ReturnType<typeof loadSnapshot>>;
-}) {
-  const preds = computeMatchPredictions(snap, match.match_number);
-  const strikers = preds.filter((p) => p.points === 3);
-  const winners = preds.filter((p) => p.points === 1).length;
-
-  const callout =
-    strikers.length === 1
-      ? `Solo ${strikers[0].name} la cantó. 🎯`
-      : strikers.length > 1
-        ? `${strikers.length} la cantaron.`
-        : winners > 0
-          ? `${winners} acertó${winners === 1 ? "" : "n"} el resultado.`
-          : "Nadie le atinó.";
-
-  return (
-    <li>
-      <Link
-        href={`/partido/${match.match_number}`}
-        className="block rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-md"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Partido #{match.match_number}</span>
-              <span>·</span>
-              <KickoffDate iso={match.kickoff_at} />
-            </div>
-            <div className="mt-1 font-heading text-base font-semibold">
-              {match.team_a} <span className="text-muted-foreground">vs</span>{" "}
-              {match.team_b}
-            </div>
-          </div>
-          <ScorePill
-            a={match.actual_a ?? 0}
-            b={match.actual_b ?? 0}
-            highlight="primary"
-          />
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{callout}</p>
-      </Link>
-    </li>
   );
 }
 
 function EmptyHome() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center sm:px-6">
+    <div className="mx-auto w-full max-w-3xl px-4 py-20 text-center sm:px-6">
       <span className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
         Mundial 2026
       </span>
-      <h1 className="mt-4 font-heading text-4xl font-bold tracking-tight sm:text-5xl">
+      <h1 className="mt-4 font-heading text-4xl font-black tracking-tight sm:text-5xl">
         La quiniela aún no <span className="text-primary">arranca</span>.
       </h1>
       <p className="mt-3 text-muted-foreground">
         En cuanto el admin cargue el calendario y las quinielas, aquí verás
-        partidos, la tabla y los pronósticos de cada jugador.
+        partidos, tabla y pronósticos de cada jugador.
       </p>
     </div>
   );

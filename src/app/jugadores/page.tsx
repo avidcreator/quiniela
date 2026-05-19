@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
+import { Avatar } from "@/components/avatar";
+import { RecentStrikes } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Jugadores · Quiniela 26" };
@@ -23,15 +25,14 @@ export default async function JugadoresPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          {leaderboard.length} {leaderboard.length === 1 ? "jugador" : "jugadores"}
+        </div>
+        <h1 className="mt-1 font-heading text-3xl font-black tracking-tight sm:text-4xl">
           Jugadores
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {leaderboard.length} jugador{leaderboard.length === 1 ? "" : "es"} en
-          el ruedo.
-        </p>
       </header>
 
       <ul className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -39,25 +40,30 @@ export default async function JugadoresPage() {
           <li key={e.player_id}>
             <Link
               href={`/jugador/${e.player_id}`}
-              className="group flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="inline-flex size-10 items-center justify-center rounded-full bg-accent/40 font-heading text-base font-bold text-accent-foreground">
-                  {e.name.slice(0, 1).toUpperCase()}
-                </span>
+                <Avatar name={e.name} size="md" />
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{e.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-heading text-base font-bold">
+                      {e.name}
+                    </span>
+                    <RecentStrikes count={e.recent_strikes} />
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     Lugar #{e.rank} · {e.strikes} cantada
                     {e.strikes === 1 ? "" : "s"}
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-heading text-lg font-bold tabular-nums">
+              <div className="flex flex-col items-end">
+                <span className="font-heading text-xl font-black tabular-nums">
                   {e.points}
-                </div>
-                <div className="text-xs text-muted-foreground">pts</div>
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  pts
+                </span>
               </div>
             </Link>
           </li>
