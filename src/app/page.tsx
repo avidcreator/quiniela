@@ -38,7 +38,6 @@ export default async function Home() {
   const recent = [...completedAsc].reverse().slice(0, 6);
 
   const leaderboard = computeLeaderboard(snap);
-  const top3 = leaderboard.slice(0, 3);
   const completedCount = snap.matches.filter(isCompleted).length;
   const tickerMatches = buildTickerMatches(snap);
 
@@ -67,7 +66,7 @@ export default async function Home() {
         />
 
         <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
-          <Podium top3={top3} />
+          <Podium entries={leaderboard} />
         </div>
 
         {recent.length > 0 ? (

@@ -1,92 +1,74 @@
 import Link from "next/link";
 import { Avatar } from "./avatar";
+import { playerColor } from "@/lib/palette";
 import type { LeaderboardEntry } from "@/lib/stats";
 
-const SLOT_STYLES = {
-  1: {
-    ring: "ring-primary",
-    bg: "bg-gradient-to-b from-primary/15 to-transparent",
-    height: "h-28",
-    rank: "text-primary",
-  },
-  2: {
-    ring: "ring-foreground",
-    bg: "bg-gradient-to-b from-foreground/10 to-transparent",
-    height: "h-20",
-    rank: "text-foreground",
-  },
-  3: {
-    ring: "ring-muted-foreground/60",
-    bg: "bg-gradient-to-b from-muted-foreground/10 to-transparent",
-    height: "h-16",
-    rank: "text-muted-foreground",
-  },
-} as const;
+export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
+  if (entries.length === 0) return null;
 
-function Slot({
-  place,
-  entry,
-}: {
-  place: 1 | 2 | 3;
-  entry: LeaderboardEntry | undefined;
-}) {
-  const s = SLOT_STYLES[place];
+  const maxPts = Math.max(1, ...entries.map((e) => e.points));
+  const maxBarPx = 120;
+
   return (
-    <div className="flex flex-col items-center gap-2">
-      {entry ? (
-        <Link
-          href={`/jugador/${entry.player_id}`}
-          className="group flex flex-col items-center"
-        >
-          <div className={`relative rounded-full ring-4 ${s.ring}`}>
-            <Avatar name={entry.name} size={place === 1 ? "xl" : "lg"} />
-            <span
-              className={`absolute -top-1 -right-1 inline-flex size-6 items-center justify-center rounded-full bg-background font-heading text-xs font-black ring-2 ring-background ${s.rank}`}
-            >
-              {place}
-            </span>
-          </div>
-          <span className="mt-2 max-w-[7rem] truncate text-center text-sm font-semibold group-hover:underline">
-            {entry.name}
-          </span>
-          <span className="font-heading text-2xl font-black tabular-nums">
-            {entry.points}
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            pts
-          </span>
-        </Link>
-      ) : (
-        <div className="flex flex-col items-center opacity-30">
-          <div
-            className={`flex items-center justify-center rounded-full ring-4 ${s.ring} ${
-              place === 1 ? "size-20" : "size-14"
-            } bg-muted`}
+    <div
+      className="grid items-end gap-3 sm:gap-4"
+      style={{
+        gridTemplateColumns: `repeat(auto-fit, minmax(72px, 1fr))`,
+      }}
+    >
+      {entries.map((e, idx) => {
+        const color = playerColor(idx);
+        const barH = Math.round((e.points / maxPts) * maxBarPx);
+        const isFirst = e.rank === 1;
+        return (
+          <Link
+            key={e.player_id}
+            href={`/jugador/${e.player_id}`}
+            className="group flex flex-col items-center"
           >
-            <span className={`font-heading text-2xl font-black ${s.rank}`}>
-              {place}
+            {/* Bar area — labels sit right above each bar */}
+            <div
+              className="flex w-full flex-col items-center justify-end"
+              style={{ height: maxBarPx + 32 }}
+            >
+              <span className="font-heading text-base font-black leading-none tabular-nums">
+                {e.points}
+              </span>
+              <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                pts
+              </span>
+              <div
+                className="mt-1 w-full rounded-t-sm"
+                style={{
+                  height: Math.max(2, barH),
+                  background: color,
+                }}
+                aria-hidden
+              />
+            </div>
+
+            {/* Rank · avatar · name */}
+            <span
+              className={`mt-2 font-heading text-xs font-black tabular-nums ${isFirst ? "text-primary" : "text-muted-foreground"}`}
+            >
+              {e.rank}
             </span>
-          </div>
-        </div>
-      )}
-      <div className={`w-full rounded-t-xl ${s.bg} ${s.height}`} />
-    </div>
-  );
-}
-
-export function Podium({ top3 }: { top3: LeaderboardEntry[] }) {
-  const first = top3[0];
-  const second = top3[1];
-  const third = top3[2];
-
-  return (
-    <div className="relative">
-      <div className="absolute inset-x-0 bottom-0 h-px bg-border" />
-      <div className="grid grid-cols-3 items-end gap-2 sm:gap-6">
-        <Slot place={2} entry={second} />
-        <Slot place={1} entry={first} />
-        <Slot place={3} entry={third} />
-      </div>
+            <div
+              className="mt-1 flex items-center justify-center"
+              style={{ height: 40 }}
+            >
+              <div
+                className={`rounded-full ring-2 ${isFirst ? "ring-primary" : "ring-transparent"}`}
+              >
+                <Avatar name={e.name} size={isFirst ? "md" : "sm"} />
+              </div>
+            </div>
+            <span className="mt-1 max-w-full truncate text-center text-[11px] font-semibold group-hover:underline">
+              {e.name}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
