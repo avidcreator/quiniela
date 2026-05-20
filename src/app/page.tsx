@@ -3,6 +3,8 @@ import { loadSnapshot, isCompleted } from "@/lib/data";
 import { computeLeaderboard, computeMatchPredictions, type LeaderboardEntry } from "@/lib/stats";
 import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
 import { DayCard, type DayCardData } from "@/components/day-card";
+import { PerroSays } from "@/components/perro-says";
+import { generatePerroQuotes } from "@/lib/perro";
 import { Avatar } from "@/components/avatar";
 import { Podium } from "@/components/podium";
 import {
@@ -41,6 +43,8 @@ export default async function Home() {
   const leaderboard = computeLeaderboard(snap);
   const completedCount = snap.matches.filter(isCompleted).length;
   const tickerMatches = buildTickerMatches(snap);
+  const perroQuotes =
+    completedCount > 0 ? generatePerroQuotes(snap, leaderboard, 1) : [];
 
   const today = todayKey();
   const hasRecapToday = snap.matches.some(
@@ -77,6 +81,12 @@ export default async function Home() {
     <>
       <Ticker matches={tickerMatches} />
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {perroQuotes.length > 0 ? (
+          <section className="mb-10">
+            <PerroSays quotes={perroQuotes} />
+          </section>
+        ) : null}
+
         {recent.length > 0 ? (
           <section>
             <SectionHeader
@@ -121,6 +131,7 @@ export default async function Home() {
             </div>
           </section>
         ) : null}
+
 
         <section className={recent.length > 0 ? "mt-12" : ""}>
           <SectionHeader title="Marcadores" />
