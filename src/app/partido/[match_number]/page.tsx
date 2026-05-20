@@ -5,6 +5,7 @@ import { computeMatchPredictions, type PredictionWithPoints } from "@/lib/stats"
 import { Avatar } from "@/components/avatar";
 import { KickoffDate } from "@/components/kickoff-date";
 import { TeamFlag } from "@/components/team-flag";
+import { groupLetter } from "@/lib/groups";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +48,11 @@ export default async function PartidoPage({
 
       <header className="mt-3">
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Partido {String(match.match_number).padStart(2, "0")} ·{" "}
-          {completed ? "Final" : "Por jugarse"}
+          Partido {String(match.match_number).padStart(2, "0")}
+          {groupLetter(match.match_number)
+            ? ` · Grupo ${groupLetter(match.match_number)}`
+            : ""}{" "}
+          · {completed ? "Jugado" : "Por jugarse"}
         </div>
       </header>
 
@@ -107,7 +111,7 @@ export default async function PartidoPage({
           {strikers.length > 0 ? (
             <PredictionGroup
               icon="🎯"
-              label="Cantaron"
+              label="Acertaron"
               tone="primary"
               players={strikers}
             />
@@ -115,7 +119,7 @@ export default async function PartidoPage({
           {winners.length > 0 ? (
             <PredictionGroup
               icon="✓"
-              label="Acertaron"
+              label="Ganaron"
               tone="accent"
               players={winners}
             />

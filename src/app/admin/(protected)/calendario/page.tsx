@@ -19,7 +19,7 @@ export default async function CalendarioPage() {
           Calendario
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Sube las 72 jornadas en CSV. Después puedes editar partidos
+          Sube los 72 partidos en CSV. Después puedes editar
           individuales si la FIFA reprograma.
         </p>
       </header>

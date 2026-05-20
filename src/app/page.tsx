@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { loadSnapshot, isCompleted } from "@/lib/data";
-import { computeLeaderboard, computeMatchPredictions } from "@/lib/stats";
-import { buildTickerItems, matchDateKey, todayKey } from "@/lib/ticker";
+import { computeLeaderboard, computeMatchPredictions, type LeaderboardEntry } from "@/lib/stats";
+import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
 import { Avatar } from "@/components/avatar";
 import { Podium } from "@/components/podium";
 import {
@@ -12,6 +12,7 @@ import { RankDelta, RecentStrikes } from "@/components/rank-delta";
 import { Sparkline } from "@/components/sparkline";
 import { Ticker } from "@/components/ticker";
 import { Vibes } from "@/components/vibes";
+import { PointsRace } from "@/components/points-race";
 
 export const dynamic = "force-dynamic";
 
@@ -29,20 +30,17 @@ export default async function Home() {
     )
     .slice(0, 4);
 
-  const recent = snap.matches
-    .filter(isCompleted)
-    .sort((a, b) => {
-      const at = new Date(a.completed_at ?? a.kickoff_at).getTime();
-      const bt = new Date(b.completed_at ?? b.kickoff_at).getTime();
-      return bt - at;
-    })
-    .slice(0, 6);
+  const completedAsc = snap.matches.filter(isCompleted).sort((a, b) => {
+    const at = new Date(a.completed_at ?? a.kickoff_at).getTime();
+    const bt = new Date(b.completed_at ?? b.kickoff_at).getTime();
+    return at - bt;
+  });
+  const recent = [...completedAsc].reverse().slice(0, 6);
 
   const leaderboard = computeLeaderboard(snap);
   const top3 = leaderboard.slice(0, 3);
-  const rest = leaderboard.slice(3);
   const completedCount = snap.matches.filter(isCompleted).length;
-  const ticker = buildTickerItems(snap, leaderboard);
+  const tickerMatches = buildTickerMatches(snap);
 
   const today = todayKey();
   const hasRecapToday = snap.matches.some(
@@ -51,36 +49,25 @@ export default async function Home() {
 
   return (
     <>
-      <Ticker items={ticker} />
+      <Ticker matches={tickerMatches} />
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
         <SectionHeader
-          eyebrow={`Jornada ${completedCount}/72`}
-          title="Tabla"
+          eyebrow={`Partido ${completedCount}/72`}
+          title="Marcadores"
           action={
-            <div className="flex items-center gap-3">
-              {hasRecapToday ? (
-                <Link
-                  href={`/dia/${today}`}
-                  className="rounded-sm border border-foreground/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] transition hover:bg-foreground hover:text-background"
-                >
-                  Resumen del día
-                </Link>
-              ) : null}
-              <HeaderLink href="/tabla">Ver completa</HeaderLink>
-            </div>
+            hasRecapToday ? (
+              <Link
+                href={`/dia/${today}`}
+                className="rounded-sm border border-foreground/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] transition hover:bg-foreground hover:text-background"
+              >
+                Resumen del día
+              </Link>
+            ) : null
           }
         />
 
         <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
           <Podium top3={top3} />
-
-          {rest.length > 0 ? (
-            <ul className="mt-8 divide-y border-t pt-4">
-              {rest.map((e) => (
-                <LeaderboardRow key={e.player_id} entry={e} />
-              ))}
-            </ul>
-          ) : null}
         </div>
 
         {recent.length > 0 ? (
@@ -114,45 +101,140 @@ export default async function Home() {
             </div>
           </section>
         ) : null}
+
+        {completedCount >= 1 ? (
+          <section className="mt-12">
+            <SectionHeader
+              eyebrow="Carrera por la copa"
+              title="Puntos en el tiempo"
+            />
+            <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 sm:p-6">
+              <PointsRace entries={leaderboard} matchesAsc={completedAsc} />
+            </div>
+          </section>
+        ) : null}
+
+        <section id="tabla" className="mt-12">
+          <SectionHeader eyebrow={`${leaderboard.length} jugador${leaderboard.length === 1 ? "" : "es"}`} title="Tabla" />
+          <ul className="mt-4 space-y-2">
+            {leaderboard.map((e) => (
+              <TablaRow key={e.player_id} entry={e} />
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Empates comparten lugar.
+          </p>
+        </section>
       </div>
     </>
   );
 }
 
-function LeaderboardRow({ entry }: { entry: ReturnType<typeof computeLeaderboard>[number] }) {
+function TablaRow({ entry: e }: { entry: LeaderboardEntry }) {
+  const losses = Math.max(0, e.matches_played - e.wins);
+  const podiumRing =
+    e.rank === 1
+      ? "ring-primary"
+      : e.rank === 2
+        ? "ring-foreground"
+        : e.rank === 3
+          ? "ring-muted-foreground/60"
+          : "ring-transparent";
+
   return (
-    <li className="flex items-center justify-between gap-3 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="w-6 text-center font-heading text-sm font-black tabular-nums text-muted-foreground">
-          {entry.rank}
-        </span>
-        <Avatar name={entry.name} size="sm" />
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Link
-            href={`/jugador/${entry.player_id}`}
-            className="truncate font-medium hover:underline"
-          >
-            {entry.name}
-          </Link>
-          <RankDelta current={entry.rank} prev={entry.prev_rank} />
-          <Vibes hot={entry.hot} cold={entry.cold} />
-          <RecentStrikes count={entry.recent_strikes} />
+    <li className="rounded-md border bg-card transition hover:border-primary/40 hover:shadow-sm">
+      <Link href={`/jugador/${e.player_id}`} className="block p-3 sm:p-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-heading text-xl font-black tabular-nums">
+              {e.rank}
+            </span>
+            <RankDelta current={e.rank} prev={e.prev_rank} />
+          </div>
+
+          <div className={`rounded-full ring-2 ${podiumRing}`}>
+            <Avatar name={e.name} size="md" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate font-heading text-base font-bold sm:text-lg">
+                {e.name}
+              </span>
+              <Vibes hot={e.hot} cold={e.cold} />
+              <RecentStrikes count={e.recent_strikes} />
+            </div>
+            <div className="mt-1 grid grid-cols-3 gap-3 sm:max-w-md">
+              <Stat
+                label="Acertaron"
+                value={e.strikes}
+                ratio={e.matches_played === 0 ? null : e.strikes / e.matches_played}
+                tone="primary"
+              />
+              <Stat
+                label="Ganaron"
+                value={e.wins}
+                ratio={e.matches_played === 0 ? null : e.wins / e.matches_played}
+                tone="accent"
+              />
+              <Stat label="Fallidos" value={losses} ratio={null} tone="muted" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden text-muted-foreground sm:inline-block">
+              <Sparkline values={e.history} width={64} height={22} />
+            </span>
+            <div className="flex flex-col items-end">
+              <span className="font-heading text-2xl font-black tabular-nums sm:text-3xl">
+                {e.points}
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                pts
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="hidden text-muted-foreground sm:inline-block">
-          <Sparkline values={entry.history} />
-        </span>
-        <div className="flex items-baseline gap-1">
-          <span className="font-heading text-lg font-black tabular-nums">
-            {entry.points}
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            pts
-          </span>
-        </div>
-      </div>
+      </Link>
     </li>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  ratio,
+  tone,
+}: {
+  label: string;
+  value: number;
+  ratio: number | null;
+  tone: "primary" | "accent" | "muted";
+}) {
+  const color =
+    tone === "primary"
+      ? "text-primary"
+      : tone === "accent"
+        ? "text-foreground"
+        : "text-muted-foreground";
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span
+          className={`font-heading text-base font-black tabular-nums ${color}`}
+        >
+          {value}
+        </span>
+        {ratio !== null ? (
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {Math.round(ratio * 100)}%
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

@@ -3,10 +3,12 @@ import { TeamFlag } from "./team-flag";
 import { Avatar } from "./avatar";
 import { KickoffDate } from "./kickoff-date";
 import { commentatorLine } from "@/lib/stats";
+import { groupLetter } from "@/lib/groups";
 import type { Match } from "@/lib/data";
 import type { PredictionWithPoints } from "@/lib/stats";
 
 export function UpcomingMatchCard({ match }: { match: Match }) {
+  const group = groupLetter(match.match_number);
   return (
     <Link
       href={`/partido/${match.match_number}`}
@@ -17,11 +19,11 @@ export function UpcomingMatchCard({ match }: { match: Match }) {
         <KickoffDate iso={match.kickoff_at} variant="short" />
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5">
-        <TeamSide team={match.team_a} align="start" />
+        <TeamSide team={match.team_a} align="start" group={group} />
         <span className="font-heading text-sm font-bold text-muted-foreground">
           VS
         </span>
-        <TeamSide team={match.team_b} align="end" />
+        <TeamSide team={match.team_b} align="end" group={group} />
       </div>
     </Link>
   );
@@ -37,31 +39,34 @@ export function RecentResultCard({
   if (match.actual_a === null || match.actual_b === null) return null;
 
   const strikers = predictions.filter((p) => p.points === 3);
-  const soloStriker = strikers.length === 1 ? strikers[0] : null;
   const winners = predictions.filter((p) => p.points === 1);
+  const soloStriker = strikers.length === 1 ? strikers[0] : null;
   const quote = commentatorLine(match, predictions);
+  const group = groupLetter(match.match_number);
 
   return (
     <Link
       href={`/partido/${match.match_number}`}
       className="group relative block overflow-hidden rounded-md border-2 border-foreground bg-card transition hover:-translate-y-0.5 hover:shadow-lg"
     >
-      {/* Scoreboard top bar */}
       <div className="flex items-center justify-between bg-foreground px-4 py-1.5 font-heading text-[11px] font-black uppercase tracking-[0.28em] text-background">
-        <span>Partido {String(match.match_number).padStart(2, "0")} · Final</span>
+        <span className="flex items-center gap-2">
+          <span>Partido {String(match.match_number).padStart(2, "0")}</span>
+          <span className="opacity-40">·</span>
+          <span>Jugado</span>
+        </span>
         <KickoffDate iso={match.kickoff_at} variant="short" className="font-mono" />
       </div>
 
-      {/* Jumbotron */}
       <div className="relative">
         <ScanlinesOverlay />
 
         <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-6 sm:px-6 sm:py-8">
           <BigTeam
             team={match.team_a}
-            score={match.actual_a}
             dim={match.actual_a < match.actual_b}
             align="start"
+            group={group}
           />
           <div className="flex items-center font-heading font-black leading-none tabular-nums">
             <span
@@ -84,30 +89,28 @@ export function RecentResultCard({
           </div>
           <BigTeam
             team={match.team_b}
-            score={match.actual_b}
             dim={match.actual_b < match.actual_a}
             align="end"
+            group={group}
           />
         </div>
 
         {soloStriker ? <SoloStamp player={soloStriker} /> : null}
       </div>
 
-      {/* Commentator tagline */}
       {quote ? (
         <div className="border-t border-dashed bg-card px-4 py-2 text-center font-heading text-xs font-bold uppercase tracking-[0.22em] text-foreground">
           {quote}
         </div>
       ) : null}
 
-      {/* Cantaron / Acertaron footer */}
-      {!soloStriker && strikers.length + winners.length > 0 ? (
-        <div className="space-y-1.5 border-t bg-muted/30 px-4 py-3 text-xs">
+      {!soloStriker && (strikers.length > 0 || winners.length > 0) ? (
+        <div className="space-y-2 border-t bg-muted/30 px-4 py-3 text-xs">
           {strikers.length > 0 ? (
-            <ScorerRow label="Cantaron" icon="🎯" players={strikers} accent />
+            <ScorerRow label="Acertaron" players={strikers} variant="strike" />
           ) : null}
           {winners.length > 0 ? (
-            <ScorerRow label="Acertaron" icon="✓" players={winners} dim />
+            <ScorerRow label="Ganaron" players={winners} variant="winner" />
           ) : null}
         </div>
       ) : null}
@@ -119,16 +122,18 @@ function TeamSide({
   team,
   align,
   highlight,
+  group,
 }: {
   team: string;
   align: "start" | "end";
   highlight?: boolean;
+  group?: string | null;
 }) {
   return (
     <div
       className={`flex items-center gap-2 ${align === "end" ? "flex-row-reverse text-right" : ""}`}
     >
-      <TeamFlag team={team} size="lg" />
+      <TeamFlag team={team} size="md" />
       <div className="min-w-0">
         <div
           className={`truncate font-heading text-base font-bold sm:text-lg ${
@@ -137,6 +142,11 @@ function TeamSide({
         >
           {team}
         </div>
+        {group ? (
+          <div className="text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Grupo {group}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -146,21 +156,29 @@ function BigTeam({
   team,
   align,
   dim,
+  group,
 }: {
   team: string;
-  score: number;
   align: "start" | "end";
   dim?: boolean;
+  group?: string | null;
 }) {
   return (
     <div
       className={`flex flex-col items-${align === "end" ? "end text-right" : "start text-left"} gap-2`}
     >
       <TeamFlag team={team} size="lg" />
-      <div
-        className={`max-w-full truncate font-heading text-sm font-black uppercase tracking-wider sm:text-base ${dim ? "text-muted-foreground" : ""}`}
-      >
-        {team}
+      <div className="flex flex-col gap-0.5">
+        <div
+          className={`max-w-full truncate font-heading text-sm font-black uppercase tracking-wider sm:text-base ${dim ? "text-muted-foreground" : ""}`}
+        >
+          {team}
+        </div>
+        {group ? (
+          <div className="text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Grupo {group}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -200,32 +218,40 @@ function ScanlinesOverlay() {
 
 function ScorerRow({
   label,
-  icon,
   players,
-  accent,
-  dim,
+  variant,
 }: {
   label: string;
-  icon: string;
   players: PredictionWithPoints[];
-  accent?: boolean;
-  dim?: boolean;
+  variant: "strike" | "winner";
 }) {
+  const isStrike = variant === "strike";
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3">
       <span
-        className={`inline-flex w-24 shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${
-          accent ? "text-primary" : "text-muted-foreground"
+        className={`inline-flex w-20 shrink-0 pt-0.5 font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
+          isStrike ? "text-primary" : "text-muted-foreground"
         }`}
       >
-        <span>{icon}</span>
-        <span>{label}</span>
+        {label}
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
         {players.map((p) => (
-          <span key={p.player_id} className="flex items-center gap-1.5">
-            <Avatar name={p.name} size="xs" dim={dim} />
+          <span
+            key={p.player_id}
+            className="inline-flex items-center gap-1.5 rounded-full border bg-card px-1.5 py-0.5"
+          >
+            <Avatar name={p.name} size="xs" dim={!isStrike} />
             <span className="text-xs font-medium">{p.name}</span>
+            <span
+              className={`rounded-sm px-1 font-heading text-[10px] font-black tabular-nums ${
+                isStrike
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-foreground text-background"
+              }`}
+            >
+              +{isStrike ? 3 : 1}
+            </span>
           </span>
         ))}
       </div>

@@ -220,7 +220,7 @@ export default async function DiaPage({
             Vacío del día
           </div>
           <p className="mt-2 text-sm">
-            Cero puntos en toda la jornada:
+            Cero puntos en todos los partidos del día:
           </p>
           <ul className="mt-3 flex flex-wrap gap-2">
             {vacios.map((v) => (

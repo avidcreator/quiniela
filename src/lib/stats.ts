@@ -172,7 +172,7 @@ export function computeLeaderboard(snap: Snapshot): LeaderboardEntry[] {
     const recentStrikes = j.perMatch
       .filter((m) => recentMatchNumbers.has(m.match_number))
       .filter((m) => m.points === 3).length;
-    const history = j.perMatch.slice(-10).map((m) => m.cumulative);
+    const history = j.perMatch.map((m) => m.cumulative);
 
     return {
       player_id: p.id,
