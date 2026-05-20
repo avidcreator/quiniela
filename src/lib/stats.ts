@@ -274,5 +274,5 @@ export function commentatorLine(
   if (goals >= 5) return `Festival de goles.`;
   if (goals === 0) return `Cero goles, cero emociones.`;
   if (draw) return `Se repartieron los puntos.`;
-  return `${winners.length} acertó${winners.length === 1 ? "" : "n"} el ganador.`;
+  return `${winners.length} ${winners.length === 1 ? "adivinó" : "adivinaron"} el ganador.`;
 }

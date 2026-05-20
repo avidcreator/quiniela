@@ -186,7 +186,7 @@ function SoloStamp({ player }: { player: PredictionWithPoints }) {
     >
       <div className="rounded-sm border-2 border-emerald-600 bg-background/95 px-2.5 py-1 shadow-md dark:border-emerald-500">
         <div className="font-heading text-[9px] font-black uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
-          Solo le atinó
+          Solo acertó
         </div>
         <div className="mt-1 flex items-center gap-1.5">
           <Avatar name={player.name} imageUrl={player.avatar_url} size="xs" />
