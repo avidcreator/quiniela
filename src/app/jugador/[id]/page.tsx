@@ -83,13 +83,13 @@ export default async function JugadorPage({
 
       <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
-          label="Cantadas"
+          label="Aciertos"
           value={stats.strikes}
           ratio={stats.matches_played === 0 ? null : stats.strike_ratio}
           tone="primary"
         />
         <Stat
-          label="Aciertos"
+          label="Ganados"
           value={stats.wins}
           ratio={stats.matches_played === 0 ? null : stats.win_ratio}
           tone="accent"
@@ -120,7 +120,7 @@ export default async function JugadorPage({
 
             const tone =
               points === 3
-                ? "border-primary/40 bg-primary/5"
+                ? "border-emerald-600/40 bg-emerald-600/5 dark:border-emerald-500/40 dark:bg-emerald-500/10"
                 : points === 1
                   ? "border-accent/50 bg-accent/10"
                   : points === 0
@@ -206,7 +206,7 @@ function Stat({
 }) {
   const color =
     tone === "primary"
-      ? "text-primary"
+      ? "text-emerald-600 dark:text-emerald-400"
       : tone === "accent"
         ? "text-foreground"
         : "text-foreground";
@@ -244,7 +244,7 @@ function PointsPill({ points }: { points: 0 | 1 | 3 | null }) {
   }
   if (points === 3) {
     return (
-      <span className="inline-flex w-7 justify-center rounded-md bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+      <span className="inline-flex w-7 justify-center rounded-md bg-emerald-600 px-1 text-[10px] font-bold text-white dark:bg-emerald-500">
         +3
       </span>
     );

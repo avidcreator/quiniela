@@ -184,8 +184,8 @@ function SoloStamp({ player }: { player: PredictionWithPoints }) {
       className="pointer-events-none absolute right-2 top-2 -rotate-6 sm:right-4 sm:top-4"
       aria-hidden
     >
-      <div className="rounded-sm border-2 border-primary bg-background/95 px-2.5 py-1 shadow-md">
-        <div className="font-heading text-[9px] font-black uppercase tracking-[0.22em] text-primary">
+      <div className="rounded-sm border-2 border-emerald-600 bg-background/95 px-2.5 py-1 shadow-md dark:border-emerald-500">
+        <div className="font-heading text-[9px] font-black uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
           Solo le atinó
         </div>
         <div className="mt-1 flex items-center gap-1.5">
@@ -211,7 +211,9 @@ function ScorerRow({
     <div className="flex items-start gap-3">
       <span
         className={`inline-flex w-20 shrink-0 pt-0.5 font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
-          isStrike ? "text-primary" : "text-muted-foreground"
+          isStrike
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-muted-foreground"
         }`}
       >
         {label}
@@ -227,7 +229,7 @@ function ScorerRow({
             <span
               className={`rounded-sm px-1 font-heading text-[10px] font-black tabular-nums ${
                 isStrike
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-emerald-600 text-white dark:bg-emerald-500"
                   : "bg-foreground text-background"
               }`}
             >

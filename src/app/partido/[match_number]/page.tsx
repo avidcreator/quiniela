@@ -208,13 +208,13 @@ function PredictionGroup({
 }) {
   const toneStyles =
     tone === "primary"
-      ? "border-primary/30 bg-primary/5"
+      ? "border-emerald-600/40 bg-emerald-600/5 dark:border-emerald-500/40"
       : tone === "accent"
         ? "border-accent/40 bg-accent/10"
         : "border-border bg-muted/30";
   const labelColor =
     tone === "primary"
-      ? "text-primary"
+      ? "text-emerald-600 dark:text-emerald-400"
       : tone === "accent"
         ? "text-foreground"
         : "text-muted-foreground";

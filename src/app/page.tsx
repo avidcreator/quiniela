@@ -201,7 +201,7 @@ function TablaRow({ entry: e }: { entry: LeaderboardEntry }) {
     <li className="rounded-md border bg-card transition hover:border-primary/40 hover:shadow-sm">
       <Link href={`/jugador/${e.player_id}`} className="block p-3 sm:p-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex w-12 shrink-0 flex-col items-center gap-1">
             <span className="font-heading text-xl font-black tabular-nums">
               {e.rank}
             </span>
@@ -222,13 +222,13 @@ function TablaRow({ entry: e }: { entry: LeaderboardEntry }) {
             </div>
             <div className="mt-1 grid grid-cols-3 gap-3 sm:max-w-md">
               <Stat
-                label="Acertaron"
+                label="Aciertos"
                 value={e.strikes}
                 ratio={e.matches_played === 0 ? null : e.strikes / e.matches_played}
                 tone="primary"
               />
               <Stat
-                label="Ganaron"
+                label="Ganados"
                 value={e.wins}
                 ratio={e.matches_played === 0 ? null : e.wins / e.matches_played}
                 tone="accent"
@@ -269,7 +269,7 @@ function Stat({
 }) {
   const color =
     tone === "primary"
-      ? "text-primary"
+      ? "text-emerald-600 dark:text-emerald-400"
       : tone === "accent"
         ? "text-foreground"
         : "text-muted-foreground";
