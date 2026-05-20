@@ -1,21 +1,7 @@
 import { TeamFlag } from "./team-flag";
+import { playerColor } from "@/lib/palette";
 import type { LeaderboardEntry } from "@/lib/stats";
 import type { Match } from "@/lib/data";
-
-const PALETTE = [
-  "#FF3B1F",
-  "#0A0A0A",
-  "#1D4ED8",
-  "#16A34A",
-  "#9333EA",
-  "#EAB308",
-  "#0891B2",
-  "#BE185D",
-  "#EA580C",
-  "#475569",
-  "#7C3AED",
-  "#059669",
-];
 
 const dateFmt = new Intl.DateTimeFormat("es-MX", {
   month: "short",
@@ -107,7 +93,7 @@ export function PointsRace({
 
         {/* Lines + per-match dots */}
         {players.map((p, idx) => {
-          const color = PALETTE[idx % PALETTE.length];
+          const color = playerColor(idx);
           const points = p.history.map((v, i) => [xFor(i), yFor(v)] as const);
           const path = points
             .map(([x, y], i) =>
@@ -115,11 +101,11 @@ export function PointsRace({
             )
             .join(" ");
           return (
-            <g key={p.player_id}>
+            <g key={p.player_id} style={{ color }}>
               <path
                 d={path}
                 fill="none"
-                stroke={color}
+                stroke="currentColor"
                 strokeWidth={2.25}
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -131,7 +117,7 @@ export function PointsRace({
                   cx={x}
                   cy={y}
                   r={i === points.length - 1 ? 3.5 : 2}
-                  fill={color}
+                  fill="currentColor"
                   opacity={i === points.length - 1 ? 1 : 0.7}
                 />
               ))}
@@ -185,7 +171,7 @@ export function PointsRace({
       {/* Legend */}
       <ul className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
         {players.map((p, idx) => {
-          const color = PALETTE[idx % PALETTE.length];
+          const color = playerColor(idx);
           return (
             <li key={p.player_id} className="inline-flex items-center gap-2">
               <span
