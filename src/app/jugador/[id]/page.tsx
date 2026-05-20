@@ -125,7 +125,9 @@ export default async function JugadorPage({
                   ? "border-accent/50 bg-accent/10"
                   : points === 0
                     ? "border-border bg-muted/30 opacity-70"
-                    : "border-border bg-card";
+                    : !completed
+                      ? "border-dashed border-muted-foreground/40 bg-card"
+                      : "border-border bg-card";
 
             return (
               <li key={m.match_number}>
@@ -144,9 +146,14 @@ export default async function JugadorPage({
                       </span>
                     </div>
                     {completed ? (
-                      <span className="font-heading text-sm font-black tabular-nums text-muted-foreground">
-                        {m.actual_a}–{m.actual_b}
-                      </span>
+                      <div className="flex flex-col items-center leading-none">
+                        <span className="text-[8px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                          Final
+                        </span>
+                        <span className="mt-0.5 font-heading text-base font-black tabular-nums">
+                          {m.actual_a}–{m.actual_b}
+                        </span>
+                      </div>
                     ) : (
                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                         vs
@@ -159,11 +166,16 @@ export default async function JugadorPage({
                       </span>
                     </div>
                   </div>
-                  <div className="flex w-20 shrink-0 items-center justify-end gap-2">
-                    <span className="font-heading text-sm font-black tabular-nums">
-                      {pred ? `${pred.pred_a}–${pred.pred_b}` : "—"}
-                    </span>
-                    <PointsPill points={points} />
+                  <div className="flex w-24 shrink-0 items-center justify-end gap-2">
+                    <div className="flex flex-col items-end leading-none">
+                      <span className="text-[8px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                        Tu pick
+                      </span>
+                      <span className="mt-0.5 font-heading text-sm font-black tabular-nums text-muted-foreground">
+                        {pred ? `${pred.pred_a}–${pred.pred_b}` : "—"}
+                      </span>
+                    </div>
+                    {completed ? <PointsPill points={points} /> : null}
                   </div>
                 </Link>
                 <KickoffDate

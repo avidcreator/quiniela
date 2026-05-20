@@ -32,7 +32,7 @@ export default async function PartidoPage({
   if (!match) notFound();
 
   const completed = isCompleted(match);
-  const preds = completed ? computeMatchPredictions(snap, num) : [];
+  const preds = computeMatchPredictions(snap, num);
   const strikers = preds.filter((p) => p.points === 3);
   const winners = preds.filter((p) => p.points === 1);
   const misses = preds.filter((p) => p.points === 0);
@@ -138,9 +138,30 @@ export default async function PartidoPage({
           <h2 className="font-heading text-xl font-black tracking-tight">
             Pronósticos
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Los pronósticos se revelan cuando termine el partido.
-          </p>
+          {preds.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Aún no hay jugadores en la quiniela.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {preds.map((p) => (
+                <li key={p.player_id}>
+                  <Link
+                    href={`/jugador/${p.player_id}`}
+                    className="flex items-center justify-between gap-4 rounded-full border bg-card px-4 py-2.5 transition hover:border-primary/40 hover:shadow-sm"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Avatar name={p.name} size="sm" />
+                      <span className="font-medium">{p.name}</span>
+                    </span>
+                    <span className="font-heading text-base font-black tabular-nums text-muted-foreground">
+                      {p.pred_a}–{p.pred_b}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </div>
