@@ -134,7 +134,7 @@ export default async function Home() {
 
 
         <section className={recent.length > 0 ? "mt-12" : ""}>
-          <SectionHeader title="Marcadores" />
+          <SectionHeader title="Posiciones" />
           <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
             <Podium entries={leaderboard} />
           </div>
@@ -156,7 +156,7 @@ export default async function Home() {
 
         {dayCards.length > 0 ? (
           <section className="mt-12">
-            <SectionHeader title="Día a día" />
+            <SectionHeader title="Resumen del día" />
             <div className="-mx-4 mt-4 overflow-x-auto px-4 py-3 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
               <div className="flex snap-x snap-mandatory items-stretch gap-6 pr-16 sm:gap-8 sm:pr-24">
                 {dayCards.map((d) => (

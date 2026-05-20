@@ -16,7 +16,7 @@ export default async function LoginPage() {
           Entrar
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Solo el admin puede entrar. Los demás siguen viendo todo sin clave.
+          Solo el admin puede hacer cambios.
         </p>
         <LoginForm />
       </div>
