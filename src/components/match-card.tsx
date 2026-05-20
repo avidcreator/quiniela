@@ -192,7 +192,7 @@ function SoloStamp({ player }: { player: PredictionWithPoints }) {
     >
       <div className="rounded-sm border-2 border-primary bg-background/95 px-2.5 py-1 shadow-md">
         <div className="font-heading text-[9px] font-black uppercase tracking-[0.22em] text-primary">
-          Solo la cantó
+          Solo le atinó
         </div>
         <div className="mt-1 flex items-center gap-1.5">
           <Avatar name={player.name} size="xs" />
