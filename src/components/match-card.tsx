@@ -45,21 +45,15 @@ export function RecentResultCard({
   const group = groupLetter(match.match_number);
 
   return (
-    <Link
-      href={`/partido/${match.match_number}`}
-      className="group relative block overflow-hidden rounded-md border-2 border-foreground bg-card transition hover:-translate-y-0.5 hover:shadow-lg"
-    >
-      <div className="flex items-center justify-between bg-foreground px-4 py-1.5 font-heading text-[11px] font-black uppercase tracking-[0.28em] text-background">
-        <span className="flex items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <Link
+        href={`/partido/${match.match_number}`}
+        className="group relative block overflow-hidden rounded-md border-2 border-foreground bg-card transition hover:-translate-y-0.5 hover:shadow-lg"
+      >
+        <div className="flex items-center justify-between bg-foreground px-4 py-1.5 font-heading text-[11px] font-black uppercase tracking-[0.28em] text-background">
           <span>Partido {String(match.match_number).padStart(2, "0")}</span>
-          <span className="opacity-40">·</span>
-          <span>Jugado</span>
-        </span>
-        <KickoffDate iso={match.kickoff_at} variant="short" className="font-mono" />
-      </div>
-
-      <div className="relative">
-        <ScanlinesOverlay />
+          <KickoffDate iso={match.kickoff_at} variant="short" className="font-mono" />
+        </div>
 
         <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-6 sm:px-6 sm:py-8">
           <BigTeam
@@ -93,19 +87,19 @@ export function RecentResultCard({
             align="end"
             group={group}
           />
+
+          {soloStriker ? <SoloStamp player={soloStriker} /> : null}
         </div>
 
-        {soloStriker ? <SoloStamp player={soloStriker} /> : null}
-      </div>
+        {quote ? (
+          <div className="border-t border-dashed bg-card px-4 py-2 text-center font-heading text-xs font-bold uppercase tracking-[0.22em] text-foreground">
+            {quote}
+          </div>
+        ) : null}
+      </Link>
 
-      {quote ? (
-        <div className="border-t border-dashed bg-card px-4 py-2 text-center font-heading text-xs font-bold uppercase tracking-[0.22em] text-foreground">
-          {quote}
-        </div>
-      ) : null}
-
-      {!soloStriker && (strikers.length > 0 || winners.length > 0) ? (
-        <div className="space-y-2 border-t bg-muted/30 px-4 py-3 text-xs">
+      {strikers.length > 0 || winners.length > 0 ? (
+        <div className="space-y-2 px-1 text-xs">
           {strikers.length > 0 ? (
             <ScorerRow label="Acertaron" players={strikers} variant="strike" />
           ) : null}
@@ -114,7 +108,7 @@ export function RecentResultCard({
           ) : null}
         </div>
       ) : null}
-    </Link>
+    </div>
   );
 }
 
@@ -165,12 +159,12 @@ function BigTeam({
 }) {
   return (
     <div
-      className={`flex flex-col items-${align === "end" ? "end text-right" : "start text-left"} gap-2`}
+      className={`flex min-w-0 flex-col items-${align === "end" ? "end text-right" : "start text-left"} gap-2`}
     >
       <TeamFlag team={team} size="lg" />
-      <div className="flex flex-col gap-0.5">
+      <div className="flex w-full flex-col gap-0.5">
         <div
-          className={`max-w-full truncate font-heading text-sm font-black uppercase tracking-wider sm:text-base ${dim ? "text-muted-foreground" : ""}`}
+          className={`font-heading text-sm font-black uppercase leading-tight tracking-wider break-words sm:text-base ${dim ? "text-muted-foreground" : ""}`}
         >
           {team}
         </div>
@@ -200,19 +194,6 @@ function SoloStamp({ player }: { player: PredictionWithPoints }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function ScanlinesOverlay() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 opacity-[0.04]"
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 4px)",
-      }}
-    />
   );
 }
 

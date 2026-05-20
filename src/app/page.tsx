@@ -71,18 +71,32 @@ export default async function Home() {
 
         {recent.length > 0 ? (
           <section className="mt-12">
-            <SectionHeader
-              title="Últimos resultados"
-              action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
-            />
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              {recent.map((m) => (
-                <RecentResultCard
-                  key={m.match_number}
-                  match={m}
-                  predictions={computeMatchPredictions(snap, m.match_number)}
-                />
-              ))}
+            <SectionHeader title="Últimos resultados" />
+            <div className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
+              <div className="flex snap-x snap-mandatory items-start gap-8 pb-2 pr-16 sm:gap-10 sm:pr-24">
+                {recent.map((m) => (
+                  <div
+                    key={m.match_number}
+                    className="w-[min(86vw,460px)] shrink-0 snap-start"
+                  >
+                    <RecentResultCard
+                      match={m}
+                      predictions={computeMatchPredictions(snap, m.match_number)}
+                    />
+                  </div>
+                ))}
+                <Link
+                  href="/partidos"
+                  className="group flex h-[230px] w-[200px] shrink-0 snap-start flex-col items-center justify-center gap-3 self-start rounded-md border-2 border-dashed border-foreground/30 bg-card p-6 text-center transition hover:border-foreground hover:bg-foreground hover:text-background"
+                >
+                  <span className="font-heading text-lg font-black uppercase tracking-[0.2em]">
+                    Ver todos
+                  </span>
+                  <span className="font-heading text-3xl font-black transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
+                </Link>
+              </div>
             </div>
           </section>
         ) : null}
