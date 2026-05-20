@@ -18,6 +18,9 @@ export type LeaderboardEntry = {
   recent_strikes: number;
   wins: number;
   matches_played: number;
+  hot: boolean;
+  cold: boolean;
+  history: number[]; // cumulative points after each completed match (chronological)
 };
 
 export type PlayerStats = {
@@ -40,15 +43,14 @@ export type PredictionWithPoints = {
 };
 
 const RECENT_WINDOW = 6;
+const HOT_WINDOW = 4;
+const HOT_THRESHOLD = 2;
+const COLD_WINDOW = 6;
 
 function indexPredictions(predictions: Prediction[]): Map<string, Prediction> {
   const map = new Map<string, Prediction>();
   for (const p of predictions) map.set(`${p.player_id}:${p.match_number}`, p);
   return map;
-}
-
-function completedMatches(matches: Match[]): Match[] {
-  return matches.filter(isCompleted);
 }
 
 function completionTime(m: Match): number {
@@ -81,80 +83,112 @@ function rankByPoints(
   return ranks;
 }
 
-function tallyPoints(
-  players: Player[],
-  matches: Match[],
+type PerMatch = { match_number: number; points: 0 | 1 | 3; cumulative: number };
+
+function playerJourney(
+  player: Player,
+  matchesAsc: Match[],
   predIdx: Map<string, Prediction>,
 ): {
-  points: Map<string, number>;
-  strikes: Map<string, number>;
-  wins: Map<string, number>;
+  perMatch: PerMatch[];
+  points: number;
+  strikes: number;
+  wins: number;
+  hot: boolean;
+  cold: boolean;
 } {
-  const points = new Map<string, number>();
-  const strikes = new Map<string, number>();
-  const wins = new Map<string, number>();
-  for (const player of players) {
-    let p = 0,
-      s = 0,
-      w = 0;
-    for (const match of matches) {
-      const pred = predIdx.get(`${player.id}:${match.match_number}`);
-      if (!pred) continue;
-      const earned = pointsForMatch(match, pred);
-      if (earned === null) continue;
-      p += earned;
-      if (earned === 3) s += 1;
-      if (earned >= 1) w += 1;
-    }
-    points.set(player.id, p);
-    strikes.set(player.id, s);
-    wins.set(player.id, w);
+  let cumulative = 0;
+  let strikes = 0;
+  let wins = 0;
+  const perMatch: PerMatch[] = [];
+
+  for (const match of matchesAsc) {
+    const pred = predIdx.get(`${player.id}:${match.match_number}`);
+    const earned = pred ? (pointsForMatch(match, pred) ?? 0) : 0;
+    cumulative += earned;
+    if (earned === 3) strikes += 1;
+    if (earned >= 1) wins += 1;
+    perMatch.push({
+      match_number: match.match_number,
+      points: earned as 0 | 1 | 3,
+      cumulative,
+    });
   }
-  return { points, strikes, wins };
+
+  const tail = (n: number) => perMatch.slice(Math.max(0, perMatch.length - n));
+  const hotTail = tail(HOT_WINDOW);
+  const coldTail = tail(COLD_WINDOW);
+  const hot = hotTail.filter((m) => m.points === 3).length >= HOT_THRESHOLD;
+  const cold =
+    coldTail.length >= COLD_WINDOW && coldTail.every((m) => m.points === 0);
+
+  return { perMatch, points: cumulative, strikes, wins, hot, cold };
+}
+
+export function leaderboardFromMatches(
+  snap: Snapshot,
+  matches: Match[],
+): LeaderboardEntry[] {
+  return computeLeaderboard({ ...snap, matches });
 }
 
 export function computeLeaderboard(snap: Snapshot): LeaderboardEntry[] {
-  const completed = completedMatches(snap.matches).sort(
-    (a, b) => completionTime(b) - completionTime(a),
-  );
+  const completedAsc = snap.matches
+    .filter(isCompleted)
+    .sort((a, b) => completionTime(a) - completionTime(b));
   const predIdx = indexPredictions(snap.predictions);
-  const matchesPlayed = completed.length;
+  const matchesPlayed = completedAsc.length;
 
-  const current = tallyPoints(snap.players, completed, predIdx);
-  const currentRanks = rankByPoints(snap.players, current.points);
-
-  const prior =
-    completed.length > 0
-      ? tallyPoints(snap.players, completed.slice(1), predIdx)
-      : null;
-  const priorRanks =
-    prior && completed.length > 1
-      ? rankByPoints(snap.players, prior.points)
-      : null;
-
-  const recentWindow = completed.slice(0, RECENT_WINDOW);
-  const recentStrikes = new Map<string, number>();
+  const journeys = new Map<string, ReturnType<typeof playerJourney>>();
   for (const player of snap.players) {
-    let count = 0;
-    for (const match of recentWindow) {
-      const pred = predIdx.get(`${player.id}:${match.match_number}`);
-      if (!pred) continue;
-      if (pointsForMatch(match, pred) === 3) count += 1;
-    }
-    recentStrikes.set(player.id, count);
+    journeys.set(player.id, playerJourney(player, completedAsc, predIdx));
   }
 
-  const rows: LeaderboardEntry[] = snap.players.map((p) => ({
-    player_id: p.id,
-    name: p.name,
-    rank: currentRanks.get(p.id) ?? 0,
-    prev_rank: priorRanks?.get(p.id) ?? null,
-    points: current.points.get(p.id) ?? 0,
-    strikes: current.strikes.get(p.id) ?? 0,
-    recent_strikes: recentStrikes.get(p.id) ?? 0,
-    wins: current.wins.get(p.id) ?? 0,
-    matches_played: matchesPlayed,
-  }));
+  const pointsByPlayer = new Map<string, number>();
+  for (const player of snap.players) {
+    pointsByPlayer.set(player.id, journeys.get(player.id)!.points);
+  }
+  const currentRanks = rankByPoints(snap.players, pointsByPlayer);
+
+  const priorPointsByPlayer = new Map<string, number>();
+  if (completedAsc.length > 0) {
+    const priorMatches = completedAsc.slice(0, -1);
+    for (const player of snap.players) {
+      const j = playerJourney(player, priorMatches, predIdx);
+      priorPointsByPlayer.set(player.id, j.points);
+    }
+  }
+  const priorRanks =
+    completedAsc.length > 1
+      ? rankByPoints(snap.players, priorPointsByPlayer)
+      : null;
+
+  const recentMatchNumbers = new Set(
+    completedAsc.slice(-RECENT_WINDOW).map((m) => m.match_number),
+  );
+
+  const rows: LeaderboardEntry[] = snap.players.map((p) => {
+    const j = journeys.get(p.id)!;
+    const recentStrikes = j.perMatch
+      .filter((m) => recentMatchNumbers.has(m.match_number))
+      .filter((m) => m.points === 3).length;
+    const history = j.perMatch.slice(-10).map((m) => m.cumulative);
+
+    return {
+      player_id: p.id,
+      name: p.name,
+      rank: currentRanks.get(p.id) ?? 0,
+      prev_rank: priorRanks?.get(p.id) ?? null,
+      points: j.points,
+      strikes: j.strikes,
+      recent_strikes: recentStrikes,
+      wins: j.wins,
+      matches_played: matchesPlayed,
+      hot: j.hot,
+      cold: j.cold,
+      history,
+    };
+  });
 
   rows.sort((a, b) => {
     if (a.rank !== b.rank) return a.rank - b.rank;
@@ -212,4 +246,29 @@ export function computeMatchPredictions(
     return a.name.localeCompare(b.name, "es");
   });
   return rows;
+}
+
+export function commentatorLine(
+  match: Match,
+  preds: PredictionWithPoints[],
+): string | null {
+  if (match.actual_a === null || match.actual_b === null) return null;
+
+  const strikers = preds.filter((p) => p.points === 3);
+  const winners = preds.filter((p) => p.points === 1);
+  const losers = preds.filter((p) => p.points === 0);
+  const total = preds.length;
+  const goals = match.actual_a + match.actual_b;
+  const draw = match.actual_a === match.actual_b;
+
+  if (total === 0) return null;
+  if (strikers.length === 1) return `¡Y la cantó ${strikers[0].name.toUpperCase()}!`;
+  if (strikers.length >= 3) return `${strikers.length} cantadas — masacre.`;
+  if (strikers.length === 2) return `Dos la vieron clarita.`;
+  if (losers.length === total) return `Nadie le vio la jugada.`;
+  if (winners.length === total) return `Todos olieron el resultado.`;
+  if (goals >= 5) return `Festival de goles.`;
+  if (goals === 0) return `Cero goles, cero emociones.`;
+  if (draw) return `Se repartieron los puntos.`;
+  return `${winners.length} acertó${winners.length === 1 ? "" : "n"} el ganador.`;
 }

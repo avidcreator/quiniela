@@ -3,6 +3,8 @@ import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard, type LeaderboardEntry } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
 import { RankDelta, RecentStrikes } from "@/components/rank-delta";
+import { Sparkline } from "@/components/sparkline";
+import { Vibes } from "@/components/vibes";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tabla · FIFA World Cup 2026" };
@@ -82,6 +84,7 @@ function PlayerRow({ entry: e }: { entry: LeaderboardEntry }) {
               <span className="truncate font-heading text-base font-bold sm:text-lg">
                 {e.name}
               </span>
+              <Vibes hot={e.hot} cold={e.cold} />
               <RecentStrikes count={e.recent_strikes} />
             </div>
             <div className="mt-1 grid grid-cols-3 gap-3 sm:max-w-md">
@@ -101,13 +104,18 @@ function PlayerRow({ entry: e }: { entry: LeaderboardEntry }) {
             </div>
           </div>
 
-          <div className="flex flex-col items-end">
-            <span className="font-heading text-2xl font-black tabular-nums sm:text-3xl">
-              {e.points}
+          <div className="flex items-center gap-3">
+            <span className="hidden text-muted-foreground sm:inline-block">
+              <Sparkline values={e.history} width={64} height={22} />
             </span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              pts
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="font-heading text-2xl font-black tabular-nums sm:text-3xl">
+                {e.points}
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                pts
+              </span>
+            </div>
           </div>
         </div>
       </Link>

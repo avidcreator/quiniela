@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { loadSnapshot, isCompleted } from "@/lib/data";
 import { computeLeaderboard, computeMatchPredictions } from "@/lib/stats";
+import { buildTickerItems, matchDateKey, todayKey } from "@/lib/ticker";
 import { Avatar } from "@/components/avatar";
 import { Podium } from "@/components/podium";
 import {
@@ -8,6 +9,9 @@ import {
   UpcomingMatchCard,
 } from "@/components/match-card";
 import { RankDelta, RecentStrikes } from "@/components/rank-delta";
+import { Sparkline } from "@/components/sparkline";
+import { Ticker } from "@/components/ticker";
+import { Vibes } from "@/components/vibes";
 
 export const dynamic = "force-dynamic";
 
@@ -38,87 +42,117 @@ export default async function Home() {
   const top3 = leaderboard.slice(0, 3);
   const rest = leaderboard.slice(3);
   const completedCount = snap.matches.filter(isCompleted).length;
+  const ticker = buildTickerItems(snap, leaderboard);
+
+  const today = todayKey();
+  const hasRecapToday = snap.matches.some(
+    (m) => isCompleted(m) && matchDateKey(m.kickoff_at) === today,
+  );
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-      <SectionHeader
-        eyebrow={`Jornada ${completedCount}/72`}
-        title="Tabla"
-        action={<HeaderLink href="/tabla">Ver completa</HeaderLink>}
-      />
+    <>
+      <Ticker items={ticker} />
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        <SectionHeader
+          eyebrow={`Jornada ${completedCount}/72`}
+          title="Tabla"
+          action={
+            <div className="flex items-center gap-3">
+              {hasRecapToday ? (
+                <Link
+                  href={`/dia/${today}`}
+                  className="rounded-sm border border-foreground/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] transition hover:bg-foreground hover:text-background"
+                >
+                  Resumen del día
+                </Link>
+              ) : null}
+              <HeaderLink href="/tabla">Ver completa</HeaderLink>
+            </div>
+          }
+        />
 
-      <div className="mt-4 rounded-3xl border bg-card p-6 sm:p-8">
-        <Podium top3={top3} />
+        <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
+          <Podium top3={top3} />
 
-        {rest.length > 0 ? (
-          <ul className="mt-8 divide-y border-t pt-4">
-            {rest.map((e) => (
-              <li
-                key={e.player_id}
-                className="flex items-center justify-between gap-3 py-3"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="w-6 text-center font-heading text-sm font-black tabular-nums text-muted-foreground">
-                    {e.rank}
-                  </span>
-                  <Avatar name={e.name} size="sm" />
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <Link
-                      href={`/jugador/${e.player_id}`}
-                      className="truncate font-medium hover:underline"
-                    >
-                      {e.name}
-                    </Link>
-                    <RankDelta current={e.rank} prev={e.prev_rank} />
-                    <RecentStrikes count={e.recent_strikes} />
-                  </div>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-heading text-lg font-black tabular-nums">
-                    {e.points}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    pts
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {rest.length > 0 ? (
+            <ul className="mt-8 divide-y border-t pt-4">
+              {rest.map((e) => (
+                <LeaderboardRow key={e.player_id} entry={e} />
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        {recent.length > 0 ? (
+          <section className="mt-12">
+            <SectionHeader
+              title="Últimos resultados"
+              action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
+            />
+            <div className="mt-4 grid gap-5 sm:grid-cols-2">
+              {recent.map((m) => (
+                <RecentResultCard
+                  key={m.match_number}
+                  match={m}
+                  predictions={computeMatchPredictions(snap, m.match_number)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {upcoming.length > 0 ? (
+          <section className="mt-12">
+            <SectionHeader
+              title="Próximos partidos"
+              action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
+            />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {upcoming.map((m) => (
+                <UpcomingMatchCard key={m.match_number} match={m} />
+              ))}
+            </div>
+          </section>
         ) : null}
       </div>
+    </>
+  );
+}
 
-      {recent.length > 0 ? (
-        <section className="mt-12">
-          <SectionHeader
-            title="Últimos resultados"
-            action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
-          />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {recent.map((m) => (
-              <RecentResultCard
-                key={m.match_number}
-                match={m}
-                predictions={computeMatchPredictions(snap, m.match_number)}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {upcoming.length > 0 ? (
-        <section className="mt-12">
-          <SectionHeader
-            title="Próximos partidos"
-            action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
-          />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {upcoming.map((m) => (
-              <UpcomingMatchCard key={m.match_number} match={m} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </div>
+function LeaderboardRow({ entry }: { entry: ReturnType<typeof computeLeaderboard>[number] }) {
+  return (
+    <li className="flex items-center justify-between gap-3 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="w-6 text-center font-heading text-sm font-black tabular-nums text-muted-foreground">
+          {entry.rank}
+        </span>
+        <Avatar name={entry.name} size="sm" />
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Link
+            href={`/jugador/${entry.player_id}`}
+            className="truncate font-medium hover:underline"
+          >
+            {entry.name}
+          </Link>
+          <RankDelta current={entry.rank} prev={entry.prev_rank} />
+          <Vibes hot={entry.hot} cold={entry.cold} />
+          <RecentStrikes count={entry.recent_strikes} />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="hidden text-muted-foreground sm:inline-block">
+          <Sparkline values={entry.history} />
+        </span>
+        <div className="flex items-baseline gap-1">
+          <span className="font-heading text-lg font-black tabular-nums">
+            {entry.points}
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            pts
+          </span>
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -170,7 +204,7 @@ function EmptyHome() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-20 text-center sm:px-6">
       <span className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        Mundial 2026
+        FIFA World Cup 2026
       </span>
       <h1 className="mt-4 font-heading text-4xl font-black tracking-tight sm:text-5xl">
         La quiniela aún no <span className="text-primary">arranca</span>.
