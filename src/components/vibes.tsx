@@ -8,7 +8,7 @@ export function Vibes({
   if (hot) {
     return (
       <span
-        title="On fire — 2+ cantadas en sus últimos 4 partidos"
+        title="On fire — 2+ aciertos en sus últimos 4 partidos"
         className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
       >
         🔥 ON FIRE

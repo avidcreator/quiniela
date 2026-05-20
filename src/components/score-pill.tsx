@@ -35,7 +35,7 @@ export function PointsBadge({ points }: { points: 0 | 1 | 3 | null }) {
   if (points === 3) {
     return (
       <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
-        Cantada · 3
+        Acierto · 3
       </span>
     );
   }

@@ -262,8 +262,8 @@ export function commentatorLine(
   const draw = match.actual_a === match.actual_b;
 
   if (total === 0) return null;
-  if (strikers.length === 1) return `¡Y la cantó ${strikers[0].name.toUpperCase()}!`;
-  if (strikers.length >= 3) return `${strikers.length} cantadas — masacre.`;
+  if (strikers.length === 1) return `¡Y la acertó ${strikers[0].name.toUpperCase()}!`;
+  if (strikers.length >= 3) return `${strikers.length} aciertos — masacre.`;
   if (strikers.length === 2) return `Dos la vieron clarita.`;
   if (losers.length === total) return `Nadie le vio la jugada.`;
   if (winners.length === total) return `Todos olieron el resultado.`;

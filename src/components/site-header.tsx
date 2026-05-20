@@ -24,18 +24,6 @@ export function SiteHeader() {
           <span className="sm:hidden">WC 2026</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
-          <Link
-            href="/partidos"
-            className="rounded-full px-3 py-1.5 font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            Partidos
-          </Link>
-          <Link
-            href="/jugadores"
-            className="rounded-full px-3 py-1.5 font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          >
-            Jugadores
-          </Link>
           <ThemeToggle />
         </nav>
       </div>

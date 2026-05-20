@@ -102,7 +102,7 @@ export default async function DiaPage({
     );
   }
 
-  // Day-level player tally for cantada/vacío
+  // Day-level player tally for acierto/vacío
   const dayTally = snap.players.map((p) => {
     let points = 0;
     let strikes = 0;
@@ -126,7 +126,7 @@ export default async function DiaPage({
     return { player: p, points, strikes, zerosOnly };
   });
 
-  const cantadaDelDia = [...dayTally]
+  const aciertoDelDia = [...dayTally]
     .filter((t) => t.strikes > 0)
     .sort((a, b) => b.strikes - a.strikes || b.points - a.points)[0];
 
@@ -187,12 +187,12 @@ export default async function DiaPage({
             crimson
           />
         ) : null}
-        {cantadaDelDia ? (
+        {aciertoDelDia ? (
           <Headline
-            eyebrow="Cantada del día"
-            title={cantadaDelDia.player.name}
-            body={`${cantadaDelDia.strikes} cantada${cantadaDelDia.strikes === 1 ? "" : "s"} hoy. ${cantadaDelDia.points} puntos en el día.`}
-            avatar={cantadaDelDia.player.name}
+            eyebrow="Acierto del día"
+            title={aciertoDelDia.player.name}
+            body={`${aciertoDelDia.strikes} acierto${aciertoDelDia.strikes === 1 ? "" : "s"} hoy. ${aciertoDelDia.points} puntos en el día.`}
+            avatar={aciertoDelDia.player.name}
             crimson={!newLeader}
           />
         ) : null}

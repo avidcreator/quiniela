@@ -52,7 +52,7 @@ export default async function JugadoresPage() {
                     <RecentStrikes count={e.recent_strikes} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Lugar #{e.rank} · {e.strikes} cantada
+                    Lugar #{e.rank} · {e.strikes} acierto
                     {e.strikes === 1 ? "" : "s"}
                   </div>
                 </div>

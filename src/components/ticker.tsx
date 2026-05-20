@@ -29,14 +29,14 @@ export function Ticker({ matches }: { matches: TickerMatch[] }) {
             key={`${m.match_number}-${i}`}
             className="inline-flex items-center gap-3 px-12 font-heading text-xs font-black uppercase tracking-[0.2em]"
           >
+            <span className="text-[10px] font-bold tracking-[0.18em] opacity-70">
+              {shortDate(m.kickoff_at)}
+            </span>
             <TeamFlag team={m.team_a} size="xs" className="ring-white/20" />
             <span className="font-mono tabular-nums">
               {m.actual_a}–{m.actual_b}
             </span>
             <TeamFlag team={m.team_b} size="xs" className="ring-white/20" />
-            <span className="ml-2 text-[10px] font-bold tracking-[0.18em] opacity-70">
-              {shortDate(m.kickoff_at)}
-            </span>
           </span>
         ))}
       </div>
