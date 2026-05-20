@@ -113,6 +113,65 @@ export async function createPlayerAction(
   redirect("/admin/jugadores");
 }
 
+export async function updatePlayerAction(
+  _prev: State,
+  formData: FormData,
+): Promise<State> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const avatarFile = formData.get("avatar");
+
+  if (!id) return { error: "id requerido" };
+  if (!name) return { error: "El nombre es obligatorio." };
+
+  const supabase = createServiceClient();
+
+  const { error: nameErr } = await supabase
+    .from("players")
+    .update({ name })
+    .eq("id", id);
+  if (nameErr) {
+    if (nameErr.code === "23505") {
+      return { error: "Ya hay un jugador con ese nombre." };
+    }
+    return { error: `Error al guardar: ${nameErr.message}` };
+  }
+
+  if (avatarFile instanceof File && avatarFile.size > 0) {
+    if (!avatarFile.type.startsWith("image/")) {
+      return { error: "La foto debe ser una imagen." };
+    }
+    const ext = fileExtension(avatarFile) || "png";
+    const path = `${id}.${ext}`;
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
+
+    const { error: upErr } = await supabase.storage
+      .from("avatars")
+      .upload(path, buffer, {
+        contentType: avatarFile.type,
+        upsert: true,
+      });
+    if (upErr) return { error: `Error al subir la foto: ${upErr.message}` };
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    // Bust CDN cache so the new image loads immediately.
+    const url = `${pub.publicUrl}?v=${Date.now()}`;
+    const { error: updErr } = await supabase
+      .from("players")
+      .update({ avatar_url: url })
+      .eq("id", id);
+    if (updErr) return { error: `Error al guardar la foto: ${updErr.message}` };
+  }
+
+  revalidatePath("/admin/jugadores");
+  revalidatePath(`/admin/jugadores/${id}`);
+  revalidatePath("/");
+  revalidatePath(`/jugador/${id}`);
+  redirect("/admin/jugadores");
+}
+
 export async function removePlayerAction(formData: FormData) {
   await requireAdmin();
 

@@ -45,7 +45,7 @@ export function Avatar({
   className?: string;
   dim?: boolean;
 }) {
-  const base = `inline-flex items-center justify-center overflow-hidden rounded-full font-heading font-bold text-white shadow-sm ring-2 ring-background ${sizeClass[size]} ${dim ? "opacity-50" : ""} ${className}`;
+  const base = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full align-middle font-heading font-bold text-white shadow-sm ring-2 ring-background ${sizeClass[size]} ${dim ? "opacity-50" : ""} ${className}`;
 
   if (imageUrl) {
     return (
@@ -58,7 +58,7 @@ export function Avatar({
         <img
           src={imageUrl}
           alt={name}
-          className="size-full object-cover"
+          className="block size-full object-cover"
           loading="lazy"
         />
       </span>

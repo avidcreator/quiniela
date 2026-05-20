@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { removePlayerAction } from "./actions";
 import { RemovePlayerButton } from "./remove-button";
@@ -11,7 +12,7 @@ export default async function PlayersPage() {
   const supabase = createServiceClient();
   const { data: players } = await supabase
     .from("players")
-    .select("id, name, created_at")
+    .select("id, name, avatar_url, created_at")
     .order("name", { ascending: true });
 
   return (
@@ -22,7 +23,7 @@ export default async function PlayersPage() {
             Jugadores
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Agrega o quita jugadores en cualquier momento del torneo.
+            Agrega, edita o quita jugadores en cualquier momento del torneo.
           </p>
         </div>
         <Button asChild>
@@ -37,14 +38,13 @@ export default async function PlayersPage() {
               key={p.id}
               className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6"
             >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-9 items-center justify-center rounded-full bg-accent/40 font-heading text-sm font-semibold text-accent-foreground">
-                  {p.name.slice(0, 1).toUpperCase()}
-                </span>
-                <div>
-                  <div className="font-medium">{p.name}</div>
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar name={p.name} imageUrl={p.avatar_url} size="md" />
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{p.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    Agregado el {new Intl.DateTimeFormat("es-MX", {
+                    Agregado el{" "}
+                    {new Intl.DateTimeFormat("es-MX", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
@@ -52,10 +52,15 @@ export default async function PlayersPage() {
                   </div>
                 </div>
               </div>
-              <form action={removePlayerAction}>
-                <input type="hidden" name="id" value={p.id} />
-                <RemovePlayerButton name={p.name} />
-              </form>
+              <div className="flex items-center gap-1">
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/admin/jugadores/${p.id}`}>Editar</Link>
+                </Button>
+                <form action={removePlayerAction}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <RemovePlayerButton name={p.name} />
+                </form>
+              </div>
             </li>
           ))}
         </ul>
