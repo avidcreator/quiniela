@@ -2,6 +2,7 @@ import Link from "next/link";
 import { loadSnapshot, isCompleted } from "@/lib/data";
 import { computeLeaderboard, computeMatchPredictions, type LeaderboardEntry } from "@/lib/stats";
 import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
+import { DayCard, type DayCardData } from "@/components/day-card";
 import { Avatar } from "@/components/avatar";
 import { Podium } from "@/components/podium";
 import {
@@ -46,6 +47,32 @@ export default async function Home() {
     (m) => isCompleted(m) && matchDateKey(m.kickoff_at) === today,
   );
 
+  const dayGroups = new Map<string, typeof completedAsc>();
+  for (const m of completedAsc) {
+    const key = matchDateKey(m.kickoff_at);
+    const arr = dayGroups.get(key) ?? [];
+    arr.push(m);
+    dayGroups.set(key, arr);
+  }
+  const dayCards: DayCardData[] = Array.from(dayGroups.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([date, matches]) => {
+      const tally = new Map<string, { name: string; points: number }>();
+      for (const m of matches) {
+        for (const p of computeMatchPredictions(snap, m.match_number)) {
+          if (p.points && p.points > 0) {
+            const cur = tally.get(p.player_id) ?? { name: p.name, points: 0 };
+            cur.points += p.points;
+            tally.set(p.player_id, cur);
+          }
+        }
+      }
+      const scorers = Array.from(tally.entries())
+        .map(([player_id, v]) => ({ player_id, ...v }))
+        .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, "es"));
+      return { date, matches, scorers };
+    });
+
   return (
     <>
       <Ticker matches={tickerMatches} />
@@ -66,8 +93,8 @@ export default async function Home() {
                 ) : null
               }
             />
-            <div className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
-              <div className="flex snap-x snap-mandatory items-start gap-8 pb-2 pr-16 sm:gap-10 sm:pr-24">
+            <div className="-mx-4 mt-4 overflow-x-auto px-4 py-3 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
+              <div className="flex snap-x snap-mandatory items-start gap-8 pr-16 sm:gap-10 sm:pr-24">
                 {recent.map((m) => (
                   <div
                     key={m.match_number}
@@ -112,6 +139,24 @@ export default async function Home() {
               {upcoming.map((m) => (
                 <UpcomingMatchCard key={m.match_number} match={m} />
               ))}
+            </div>
+          </section>
+        ) : null}
+
+        {dayCards.length > 0 ? (
+          <section className="mt-12">
+            <SectionHeader title="Día a día" />
+            <div className="-mx-4 mt-4 overflow-x-auto px-4 py-3 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
+              <div className="flex snap-x snap-mandatory items-stretch gap-6 pr-16 sm:gap-8 sm:pr-24">
+                {dayCards.map((d) => (
+                  <div
+                    key={d.date}
+                    className="w-[min(78vw,360px)] shrink-0 snap-start"
+                  >
+                    <DayCard data={d} />
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         ) : null}
