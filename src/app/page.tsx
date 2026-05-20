@@ -50,28 +50,22 @@ export default async function Home() {
     <>
       <Ticker matches={tickerMatches} />
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-        <SectionHeader
-          eyebrow={`Partido ${completedCount}/72`}
-          title="Marcadores"
-          action={
-            hasRecapToday ? (
-              <Link
-                href={`/dia/${today}`}
-                className="rounded-sm border border-foreground/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] transition hover:bg-foreground hover:text-background"
-              >
-                Resumen del día
-              </Link>
-            ) : null
-          }
-        />
-
-        <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
-          <Podium entries={leaderboard} />
-        </div>
-
         {recent.length > 0 ? (
-          <section className="mt-12">
-            <SectionHeader title="Últimos resultados" />
+          <section>
+            <SectionHeader
+              eyebrow={`Partido ${completedCount}/72`}
+              title="Últimos resultados"
+              action={
+                hasRecapToday ? (
+                  <Link
+                    href={`/dia/${today}`}
+                    className="rounded-sm border border-foreground/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.22em] transition hover:bg-foreground hover:text-background"
+                  >
+                    Resumen del día
+                  </Link>
+                ) : null
+              }
+            />
             <div className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
               <div className="flex snap-x snap-mandatory items-start gap-8 pb-2 pr-16 sm:gap-10 sm:pr-24">
                 {recent.map((m) => (
@@ -101,6 +95,13 @@ export default async function Home() {
           </section>
         ) : null}
 
+        <section className={recent.length > 0 ? "mt-12" : ""}>
+          <SectionHeader title="Marcadores" />
+          <div className="mt-4 rounded-md border-2 border-foreground bg-card p-6 sm:p-8">
+            <Podium entries={leaderboard} />
+          </div>
+        </section>
+
         {upcoming.length > 0 ? (
           <section className="mt-12">
             <SectionHeader
@@ -111,18 +112,6 @@ export default async function Home() {
               {upcoming.map((m) => (
                 <UpcomingMatchCard key={m.match_number} match={m} />
               ))}
-            </div>
-          </section>
-        ) : null}
-
-        {completedCount >= 1 ? (
-          <section className="mt-12">
-            <SectionHeader
-              eyebrow="Carrera por la copa"
-              title="Puntos en el tiempo"
-            />
-            <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 sm:p-6">
-              <PointsRace entries={leaderboard} matchesAsc={completedAsc} />
             </div>
           </section>
         ) : null}
@@ -138,6 +127,15 @@ export default async function Home() {
             Empates comparten lugar.
           </p>
         </section>
+
+        {completedCount >= 1 ? (
+          <section className="mt-12">
+            <SectionHeader title="Puntuación" />
+            <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 sm:p-6">
+              <PointsRace entries={leaderboard} matchesAsc={completedAsc} />
+            </div>
+          </section>
+        ) : null}
       </div>
     </>
   );
