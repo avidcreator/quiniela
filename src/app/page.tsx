@@ -209,7 +209,7 @@ function TablaRow({ entry: e }: { entry: LeaderboardEntry }) {
           </div>
 
           <div className={`rounded-full ring-2 ${podiumRing}`}>
-            <Avatar name={e.name} size="md" />
+            <Avatar name={e.name} imageUrl={e.avatar_url} size="md" />
           </div>
 
           <div className="min-w-0 flex-1">

@@ -34,23 +34,43 @@ function initials(name: string): string {
 
 export function Avatar({
   name,
+  imageUrl,
   size = "md",
   className = "",
   dim = false,
 }: {
   name: string;
+  imageUrl?: string | null;
   size?: Size;
   className?: string;
   dim?: boolean;
 }) {
+  const base = `inline-flex items-center justify-center overflow-hidden rounded-full font-heading font-bold text-white shadow-sm ring-2 ring-background ${sizeClass[size]} ${dim ? "opacity-50" : ""} ${className}`;
+
+  if (imageUrl) {
+    return (
+      <span
+        aria-label={name}
+        title={name}
+        className={`${base} bg-muted`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt={name}
+          className="size-full object-cover"
+          loading="lazy"
+        />
+      </span>
+    );
+  }
+
   const color = PALETTE[hash(name) % PALETTE.length];
   return (
     <span
       aria-label={name}
       title={name}
-      className={`inline-flex items-center justify-center rounded-full font-heading font-bold text-white shadow-sm ring-2 ring-background ${color} ${
-        sizeClass[size]
-      } ${dim ? "opacity-50" : ""} ${className}`}
+      className={`${base} ${color}`}
     >
       {initials(name)}
     </span>

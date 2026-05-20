@@ -43,7 +43,7 @@ export default async function JugadoresPage() {
               className="group flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <Avatar name={e.name} size="md" />
+                <Avatar name={e.name} imageUrl={e.avatar_url} size="md" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-heading text-base font-bold">

@@ -189,7 +189,7 @@ function SoloStamp({ player }: { player: PredictionWithPoints }) {
           Solo le atinó
         </div>
         <div className="mt-1 flex items-center gap-1.5">
-          <Avatar name={player.name} size="xs" />
+          <Avatar name={player.name} imageUrl={player.avatar_url} size="xs" />
           <span className="font-heading text-xs font-black">{player.name}</span>
         </div>
       </div>
@@ -224,7 +224,7 @@ function ScorerRow({
             key={p.player_id}
             className="inline-flex items-center gap-1.5 rounded-full border bg-card px-1.5 py-0.5"
           >
-            <Avatar name={p.name} size="xs" dim={!isStrike} />
+            <Avatar name={p.name} imageUrl={p.avatar_url} size="xs" dim={!isStrike} />
             <span className="text-xs font-medium">{p.name}</span>
             <span
               className={`rounded-sm px-1 font-heading text-[10px] font-black tabular-nums ${

@@ -16,6 +16,13 @@ export function NewPlayerForm() {
         <Input id="name" name="name" required autoFocus />
       </div>
       <div className="space-y-2">
+        <Label htmlFor="avatar">Foto (opcional)</Label>
+        <Input id="avatar" name="avatar" type="file" accept="image/*" />
+        <p className="text-xs text-muted-foreground">
+          Si no subes una foto, se usará un avatar con sus iniciales.
+        </p>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="file">Quiniela CSV</Label>
         <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
       </div>

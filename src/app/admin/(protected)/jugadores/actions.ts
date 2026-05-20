@@ -8,6 +8,14 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 type State = { error?: string };
 
+function fileExtension(file: File): string {
+  const name = file.name.toLowerCase();
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return "";
+  const ext = name.slice(dot + 1).replace(/[^a-z0-9]/g, "");
+  return ext.length > 0 && ext.length <= 5 ? ext : "";
+}
+
 export async function createPlayerAction(
   _prev: State,
   formData: FormData,
@@ -15,14 +23,15 @@ export async function createPlayerAction(
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
-  const file = formData.get("file");
+  const csvFile = formData.get("file");
+  const avatarFile = formData.get("avatar");
 
   if (!name) return { error: "El nombre es obligatorio." };
-  if (!(file instanceof File) || file.size === 0) {
+  if (!(csvFile instanceof File) || csvFile.size === 0) {
     return { error: "Sube la quiniela del jugador en CSV." };
   }
 
-  const text = await file.text();
+  const text = await csvFile.text();
   const parsed = parseScorecardCsv(text);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -51,6 +60,38 @@ export async function createPlayerAction(
     return { error: `Error al crear jugador: ${playerErr.message}` };
   }
 
+  // Optional avatar upload — if any failure, roll back the player + abort.
+  if (avatarFile instanceof File && avatarFile.size > 0) {
+    if (!avatarFile.type.startsWith("image/")) {
+      await supabase.from("players").delete().eq("id", player.id);
+      return { error: "La foto debe ser una imagen." };
+    }
+    const ext = fileExtension(avatarFile) || "png";
+    const path = `${player.id}.${ext}`;
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
+
+    const { error: upErr } = await supabase.storage
+      .from("avatars")
+      .upload(path, buffer, {
+        contentType: avatarFile.type,
+        upsert: true,
+      });
+    if (upErr) {
+      await supabase.from("players").delete().eq("id", player.id);
+      return { error: `Error al subir la foto: ${upErr.message}` };
+    }
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error: updErr } = await supabase
+      .from("players")
+      .update({ avatar_url: pub.publicUrl })
+      .eq("id", player.id);
+    if (updErr) {
+      await supabase.from("players").delete().eq("id", player.id);
+      return { error: `Error al guardar la foto: ${updErr.message}` };
+    }
+  }
+
   const predictions = parsed.rows.map((r) => ({
     player_id: player.id,
     match_number: r.match_number,
@@ -58,7 +99,9 @@ export async function createPlayerAction(
     pred_b: r.pred_b,
   }));
 
-  const { error: predErr } = await supabase.from("predictions").insert(predictions);
+  const { error: predErr } = await supabase
+    .from("predictions")
+    .insert(predictions);
 
   if (predErr) {
     await supabase.from("players").delete().eq("id", player.id);

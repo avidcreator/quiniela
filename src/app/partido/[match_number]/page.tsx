@@ -151,7 +151,7 @@ export default async function PartidoPage({
                     className="flex items-center justify-between gap-4 rounded-full border bg-card px-4 py-2.5 transition hover:border-primary/40 hover:shadow-sm"
                   >
                     <span className="flex items-center gap-3">
-                      <Avatar name={p.name} size="sm" />
+                      <Avatar name={p.name} imageUrl={p.avatar_url} size="sm" />
                       <span className="font-medium">{p.name}</span>
                     </span>
                     <span className="font-heading text-base font-black tabular-nums text-muted-foreground">
@@ -236,7 +236,7 @@ function PredictionGroup({
               href={`/jugador/${p.player_id}`}
               className="flex items-center gap-2 hover:underline"
             >
-              <Avatar name={p.name} size="sm" dim={tone === "muted"} />
+              <Avatar name={p.name} imageUrl={p.avatar_url} size="sm" dim={tone === "muted"} />
               <span className="font-medium">{p.name}</span>
             </Link>
             <span className="font-heading text-sm font-bold tabular-nums text-muted-foreground">

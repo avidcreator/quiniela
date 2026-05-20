@@ -12,7 +12,7 @@ export type Match = {
   completed_at: string | null;
 };
 
-export type Player = { id: string; name: string };
+export type Player = { id: string; name: string; avatar_url: string | null };
 
 export type Prediction = {
   player_id: string;
@@ -36,7 +36,10 @@ export async function loadSnapshot(): Promise<Snapshot> {
         "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, completed_at",
       )
       .order("match_number", { ascending: true }),
-    supabase.from("players").select("id, name").order("name", { ascending: true }),
+    supabase
+      .from("players")
+      .select("id, name, avatar_url")
+      .order("name", { ascending: true }),
     supabase
       .from("predictions")
       .select("player_id, match_number, pred_a, pred_b"),

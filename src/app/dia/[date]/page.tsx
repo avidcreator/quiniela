@@ -184,6 +184,7 @@ export default async function DiaPage({
             title={newLeader.name}
             body={`Tomó el #1 con ${newLeader.points} puntos.`}
             avatar={newLeader.name}
+            avatarUrl={newLeader.avatar_url}
             crimson
           />
         ) : null}
@@ -193,6 +194,7 @@ export default async function DiaPage({
             title={aciertoDelDia.player.name}
             body={`${aciertoDelDia.strikes} acierto${aciertoDelDia.strikes === 1 ? "" : "s"} hoy. ${aciertoDelDia.points} puntos en el día.`}
             avatar={aciertoDelDia.player.name}
+            avatarUrl={aciertoDelDia.player.avatar_url}
             crimson={!newLeader}
           />
         ) : null}
@@ -202,6 +204,7 @@ export default async function DiaPage({
             title={biggestRise.player.name}
             body={`Subió ${biggestRise.delta} lugar${biggestRise.delta === 1 ? "" : "es"} en la tabla.`}
             avatar={biggestRise.player.name}
+            avatarUrl={biggestRise.player.avatar_url}
           />
         ) : null}
         {biggestFall ? (
@@ -210,6 +213,7 @@ export default async function DiaPage({
             title={biggestFall.player.name}
             body={`Bajó ${biggestFall.delta} lugar${biggestFall.delta === 1 ? "" : "es"}.`}
             avatar={biggestFall.player.name}
+            avatarUrl={biggestFall.player.avatar_url}
           />
         ) : null}
       </section>
@@ -228,7 +232,7 @@ export default async function DiaPage({
                 key={v.player.id}
                 className="inline-flex items-center gap-1.5 rounded-full bg-card px-2 py-1 text-xs font-medium"
               >
-                <Avatar name={v.player.name} size="xs" dim />
+                <Avatar name={v.player.name} imageUrl={v.player.avatar_url} size="xs" dim />
                 <span>{v.player.name}</span>
               </li>
             ))}
@@ -268,7 +272,7 @@ export default async function DiaPage({
                   <span className="w-6 text-center font-heading text-sm font-black tabular-nums">
                     {e.rank}
                   </span>
-                  <Avatar name={e.name} size="sm" />
+                  <Avatar name={e.name} imageUrl={e.avatar_url} size="sm" />
                   <Link
                     href={`/jugador/${e.player_id}`}
                     className="truncate font-medium hover:underline"
@@ -307,12 +311,14 @@ function Headline({
   title,
   body,
   avatar,
+  avatarUrl,
   crimson,
 }: {
   eyebrow: string;
   title: string;
   body: string;
   avatar: string;
+  avatarUrl?: string | null;
   crimson?: boolean;
 }) {
   return (
@@ -324,7 +330,7 @@ function Headline({
       }`}
     >
       <div className="flex items-center gap-3">
-        <Avatar name={avatar} size="md" />
+        <Avatar name={avatar} imageUrl={avatarUrl} size="md" />
         <div className="min-w-0 flex-1">
           <div
             className={`text-[10px] font-bold uppercase tracking-[0.22em] ${

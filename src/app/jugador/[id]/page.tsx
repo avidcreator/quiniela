@@ -59,7 +59,7 @@ export default async function JugadorPage({
 
       <header className="mt-4 flex flex-wrap items-center gap-4 sm:gap-6">
         <div className={`rounded-full ring-4 ${podiumRing}`}>
-          <Avatar name={player.name} size="xl" />
+          <Avatar name={player.name} imageUrl={player.avatar_url} size="xl" />
         </div>
         <div className="min-w-0">
           {rank ? (

@@ -60,7 +60,7 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
               <div
                 className={`rounded-full ring-2 ${isFirst ? "ring-primary" : "ring-transparent"}`}
               >
-                <Avatar name={e.name} size={isFirst ? "md" : "sm"} />
+                <Avatar name={e.name} imageUrl={e.avatar_url} size={isFirst ? "md" : "sm"} />
               </div>
             </div>
             <span className="mt-1 max-w-full truncate text-center text-[11px] font-semibold group-hover:underline">

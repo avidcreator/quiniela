@@ -11,6 +11,7 @@ import {
 export type LeaderboardEntry = {
   player_id: string;
   name: string;
+  avatar_url: string | null;
   rank: number;
   prev_rank: number | null;
   points: number;
@@ -20,7 +21,7 @@ export type LeaderboardEntry = {
   matches_played: number;
   hot: boolean;
   cold: boolean;
-  history: number[]; // cumulative points after each completed match (chronological)
+  history: number[];
 };
 
 export type PlayerStats = {
@@ -37,6 +38,7 @@ export type PlayerStats = {
 export type PredictionWithPoints = {
   player_id: string;
   name: string;
+  avatar_url: string | null;
   pred_a: number;
   pred_b: number;
   points: 0 | 1 | 3 | null;
@@ -177,6 +179,7 @@ export function computeLeaderboard(snap: Snapshot): LeaderboardEntry[] {
     return {
       player_id: p.id,
       name: p.name,
+      avatar_url: p.avatar_url,
       rank: currentRanks.get(p.id) ?? 0,
       prev_rank: priorRanks?.get(p.id) ?? null,
       points: j.points,
@@ -233,6 +236,7 @@ export function computeMatchPredictions(
     return {
       player_id: player.id,
       name: player.name,
+      avatar_url: player.avatar_url,
       pred_a: pred?.pred_a ?? 0,
       pred_b: pred?.pred_b ?? 0,
       points: pred ? pointsForMatch(match, pred) : null,
