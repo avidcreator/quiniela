@@ -1,16 +1,24 @@
 export const PLAYER_PALETTE = [
-  "#FF3B1F", // crimson (#1)
-  "#0A0A0A", // ink
-  "#1D4ED8", // blue
-  "#16A34A", // green
-  "#9333EA", // purple
-  "#EAB308", // amber
-  "#0891B2", // teal
-  "#BE185D", // magenta
-  "#EA580C", // orange
-  "#475569", // slate
-  "#7C3AED", // violet
-  "#059669", // emerald
+  "var(--player-1)",
+  "var(--player-2)",
+  "var(--player-3)",
+  "var(--player-4)",
+  "var(--player-5)",
+  "var(--player-6)",
+  "var(--player-7)",
+  "var(--player-8)",
+  "var(--player-9)",
+  "var(--player-10)",
+  "var(--player-11)",
+  "var(--player-12)",
+  "var(--player-13)",
+  "var(--player-14)",
+  "var(--player-15)",
+  "var(--player-16)",
+  "var(--player-17)",
+  "var(--player-18)",
+  "var(--player-19)",
+  "var(--player-20)",
 ] as const;
 
 export function playerColor(index: number): string {

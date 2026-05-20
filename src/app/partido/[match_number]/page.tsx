@@ -33,9 +33,9 @@ export default async function PartidoPage({
 
   const completed = isCompleted(match);
   const preds = computeMatchPredictions(snap, num);
-  const strikers = preds.filter((p) => p.points === 3);
-  const winners = preds.filter((p) => p.points === 1);
-  const misses = preds.filter((p) => p.points === 0);
+  const teamARooters = preds.filter((p) => p.pred_a > p.pred_b);
+  const drawRooters = preds.filter((p) => p.pred_a === p.pred_b);
+  const teamBRooters = preds.filter((p) => p.pred_b > p.pred_a);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
@@ -103,67 +103,43 @@ export default async function PartidoPage({
         </div>
       </section>
 
-      {completed ? (
-        <section className="mt-8 space-y-4">
-          <h2 className="font-heading text-xl font-black tracking-tight">
-            Pronósticos
-          </h2>
-          {strikers.length > 0 ? (
-            <PredictionGroup
-              icon="🎯"
-              label="Acertaron"
-              tone="primary"
-              players={strikers}
-            />
-          ) : null}
-          {winners.length > 0 ? (
-            <PredictionGroup
-              icon="✓"
-              label="Ganaron"
-              tone="accent"
-              players={winners}
-            />
-          ) : null}
-          {misses.length > 0 ? (
-            <PredictionGroup
-              icon="✗"
-              label="Fallaron"
-              tone="muted"
-              players={misses}
-            />
-          ) : null}
-        </section>
-      ) : (
-        <section className="mt-8">
-          <h2 className="font-heading text-xl font-black tracking-tight">
-            Pronósticos
-          </h2>
-          {preds.length === 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Aún no hay jugadores en la quiniela.
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {preds.map((p) => (
-                <li key={p.player_id}>
-                  <Link
-                    href={`/jugador/${p.player_id}`}
-                    className="flex items-center justify-between gap-4 rounded-full border bg-card px-4 py-2.5 transition hover:border-primary/40 hover:shadow-sm"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Avatar name={p.name} imageUrl={p.avatar_url} size="sm" />
-                      <span className="font-medium">{p.name}</span>
-                    </span>
-                    <span className="font-heading text-base font-black tabular-nums text-muted-foreground">
-                      {p.pred_a}–{p.pred_b}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      <section className="mt-8 space-y-4">
+        <h2 className="font-heading text-xl font-black tracking-tight">
+          Pronósticos
+        </h2>
+
+        {preds.length === 0 ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Aún no hay jugadores en la quiniela.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {teamARooters.length > 0 ? (
+              <RootingGroup
+                heading={`Gana ${match.team_a}`}
+                team={match.team_a}
+                players={teamARooters}
+                completed={completed}
+              />
+            ) : null}
+            {drawRooters.length > 0 ? (
+              <RootingGroup
+                heading="Empate"
+                players={drawRooters}
+                completed={completed}
+              />
+            ) : null}
+            {teamBRooters.length > 0 ? (
+              <RootingGroup
+                heading={`Gana ${match.team_b}`}
+                team={match.team_b}
+                players={teamBRooters}
+                completed={completed}
+              />
+            ) : null}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -195,56 +171,74 @@ function TeamColumn({
   );
 }
 
-function PredictionGroup({
-  icon,
-  label,
-  tone,
+function RootingGroup({
+  heading,
+  team,
   players,
+  completed,
 }: {
-  icon: string;
-  label: string;
-  tone: "primary" | "accent" | "muted";
+  heading: string;
+  team?: string;
   players: PredictionWithPoints[];
+  completed: boolean;
 }) {
-  const toneStyles =
-    tone === "primary"
-      ? "border-emerald-600/40 bg-emerald-600/5 dark:border-emerald-500/40"
-      : tone === "accent"
-        ? "border-accent/40 bg-accent/10"
-        : "border-border bg-muted/30";
-  const labelColor =
-    tone === "primary"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : tone === "accent"
-        ? "text-foreground"
-        : "text-muted-foreground";
-
   return (
-    <div className={`rounded-2xl border p-4 ${toneStyles}`}>
-      <div
-        className={`mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] ${labelColor}`}
-      >
-        <span>{icon}</span>
+    <div className="rounded-2xl border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+        {team ? <TeamFlag team={team} size="xs" /> : null}
         <span>
-          {label} · {players.length}
+          {heading} · {players.length}
         </span>
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
         {players.map((p) => (
-          <li key={p.player_id} className="flex items-center justify-between gap-3">
+          <li
+            key={p.player_id}
+            className="flex items-center justify-between gap-3"
+          >
             <Link
               href={`/jugador/${p.player_id}`}
-              className="flex items-center gap-2 hover:underline"
+              className="flex min-w-0 items-center gap-2 hover:underline"
             >
-              <Avatar name={p.name} imageUrl={p.avatar_url} size="sm" dim={tone === "muted"} />
-              <span className="font-medium">{p.name}</span>
+              <Avatar
+                name={p.name}
+                imageUrl={p.avatar_url}
+                size="sm"
+                dim={completed && p.points === 0}
+              />
+              <span className="truncate font-medium">{p.name}</span>
             </Link>
-            <span className="font-heading text-sm font-bold tabular-nums text-muted-foreground">
-              {p.pred_a}–{p.pred_b}
+            <span className="flex items-center gap-2">
+              <span className="font-heading text-sm font-bold tabular-nums text-muted-foreground">
+                {p.pred_a}–{p.pred_b}
+              </span>
+              {completed ? <InlinePointsPill points={p.points} /> : null}
             </span>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function InlinePointsPill({ points }: { points: 0 | 1 | 3 | null }) {
+  if (points === 3) {
+    return (
+      <span className="inline-flex w-7 justify-center rounded-md bg-emerald-600 px-1 text-[10px] font-bold text-white dark:bg-emerald-500">
+        +3
+      </span>
+    );
+  }
+  if (points === 1) {
+    return (
+      <span className="inline-flex w-7 justify-center rounded-md bg-foreground px-1 text-[10px] font-bold text-background">
+        +1
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex w-7 justify-center rounded-md bg-muted px-1 text-[10px] font-bold text-muted-foreground">
+      0
+    </span>
   );
 }
