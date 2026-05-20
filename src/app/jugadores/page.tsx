@@ -2,7 +2,7 @@ import Link from "next/link";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
-import { RecentStrikes } from "@/components/rank-delta";
+import { StrikesBadge } from "@/components/rank-delta";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Jugadores · FIFA World Cup 2026" };
@@ -49,7 +49,7 @@ export default async function JugadoresPage() {
                     <span className="truncate font-heading text-base font-bold">
                       {e.name}
                     </span>
-                    <RecentStrikes count={e.recent_strikes} />
+                    <StrikesBadge count={e.strikes} />
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Lugar #{e.rank} · {e.strikes} acierto

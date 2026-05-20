@@ -29,12 +29,12 @@ export function RankDelta({
   );
 }
 
-export function RecentStrikes({ count }: { count: number }) {
+export function StrikesBadge({ count }: { count: number }) {
   if (count === 0) return null;
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full bg-emerald-600/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-      title={`${count} acierto${count === 1 ? "" : "s"} reciente${count === 1 ? "" : "s"}`}
+      title={`${count} acierto${count === 1 ? "" : "s"} en total`}
     >
       🎯 ×{count}
     </span>

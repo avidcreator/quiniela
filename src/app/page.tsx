@@ -9,7 +9,7 @@ import {
   RecentResultCard,
   UpcomingMatchCard,
 } from "@/components/match-card";
-import { RankDelta, RecentStrikes } from "@/components/rank-delta";
+import { RankDelta, StrikesBadge } from "@/components/rank-delta";
 import { Sparkline } from "@/components/sparkline";
 import { Ticker } from "@/components/ticker";
 import { Vibes } from "@/components/vibes";
@@ -218,7 +218,7 @@ function TablaRow({ entry: e }: { entry: LeaderboardEntry }) {
                 {e.name}
               </span>
               <Vibes hot={e.hot} cold={e.cold} />
-              <RecentStrikes count={e.recent_strikes} />
+              <StrikesBadge count={e.strikes} />
             </div>
             <div className="mt-1 grid grid-cols-3 gap-3 sm:max-w-md">
               <Stat
