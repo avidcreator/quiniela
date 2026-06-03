@@ -62,9 +62,10 @@ export function PointsRace({
   }, []);
 
   const padding = { top: 16, right: 28, bottom: 16, left: 36 };
-  // On mobile fill the container; only grow wider (and scroll) when there are
-  // enough matches that each needs ~48px of room.
-  const availW = containerW > 0 ? containerW : 360;
+  // On mobile fill the visible scroll area (containerW is its clientWidth, which
+  // already excludes the 6px side padding); only grow wider — and scroll — when
+  // there are enough matches that each needs ~48px of room.
+  const availW = containerW > 0 ? containerW - 12 : 348;
   const vbWidth = isMobile ? Math.max(availW, n * 48) : 720;
   const vbHeight = isMobile ? 300 : height;
   const innerW = vbWidth - padding.left - padding.right;
@@ -154,8 +155,11 @@ export function PointsRace({
   const clampedScrub = Math.min(scrubIdx, maxScrub);
 
   return (
-    <div ref={containerRef} className="w-full">
-      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:thin]">
+    <div className="w-full">
+      <div
+        ref={containerRef}
+        className="-mx-4 overflow-x-auto px-1.5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:thin]"
+      >
         <div style={{ width: isMobile ? `${vbWidth}px` : undefined }}>
           <div
             ref={chartRef}
