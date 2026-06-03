@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadSnapshot, isCompleted } from "@/lib/data";
+import { loadSnapshot, isCompleted, type Match } from "@/lib/data";
 import { computeMatchPredictions, type PredictionWithPoints } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
 import { KickoffDate } from "@/components/kickoff-date";
 import { TeamFlag } from "@/components/team-flag";
+import { MatchSwiper } from "@/components/match-swiper";
 
 export const dynamic = "force-dynamic";
 
@@ -36,16 +37,49 @@ export default async function PartidoPage({
   const drawRooters = preds.filter((p) => p.pred_a === p.pred_b);
   const teamBRooters = preds.filter((p) => p.pred_b > p.pred_a);
 
-  return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-      <Link
-        href="/partidos"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Partidos
-      </Link>
+  // Previous / next match in the calendar order.
+  const sortedNums = snap.matches
+    .map((m) => m.match_number)
+    .sort((a, b) => a - b);
+  const idx = sortedNums.indexOf(num);
+  const prevMatch =
+    idx > 0
+      ? snap.matches.find((m) => m.match_number === sortedNums[idx - 1]) ?? null
+      : null;
+  const nextMatch =
+    idx >= 0 && idx < sortedNums.length - 1
+      ? snap.matches.find((m) => m.match_number === sortedNums[idx + 1]) ?? null
+      : null;
+  const prevHref = prevMatch ? `/partido/${prevMatch.match_number}` : null;
+  const nextHref = nextMatch ? `/partido/${nextMatch.match_number}` : null;
 
-      <header className="mt-3">
+  return (
+    <MatchSwiper prevHref={prevHref} nextHref={nextHref}>
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      {/* Match navigator */}
+      <div className="flex items-center justify-between gap-3">
+        {prevMatch ? (
+          <MatchNavButton match={prevMatch} dir="prev" />
+        ) : (
+          <span className="w-20" />
+        )}
+        <Link
+          href="/partidos"
+          className="font-heading text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground transition hover:text-foreground"
+        >
+          Todos
+        </Link>
+        {nextMatch ? (
+          <MatchNavButton match={nextMatch} dir="next" />
+        ) : (
+          <span className="w-20" />
+        )}
+      </div>
+      <p className="mt-2 text-center text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:hidden">
+        Desliza para cambiar de partido
+      </p>
+
+      <header className="mt-4">
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Partido {String(match.match_number).padStart(2, "0")}
           {match.group ? ` · Grupo ${match.group}` : ""} ·{" "}
@@ -138,6 +172,41 @@ export default async function PartidoPage({
         )}
       </section>
     </div>
+    </MatchSwiper>
+  );
+}
+
+function MatchNavButton({
+  match,
+  dir,
+}: {
+  match: Match;
+  dir: "prev" | "next";
+}) {
+  return (
+    <Link
+      href={`/partido/${match.match_number}`}
+      title={`${match.team_a} vs ${match.team_b}`}
+      className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1.5 transition hover:border-foreground/40 hover:shadow-sm"
+    >
+      {dir === "prev" ? (
+        <span className="font-heading text-base font-black leading-none">
+          ‹
+        </span>
+      ) : null}
+      <span className="flex items-center gap-1">
+        <TeamFlag team={match.team_a} size="xs" />
+        <TeamFlag team={match.team_b} size="xs" />
+      </span>
+      <span className="font-heading text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+        {String(match.match_number).padStart(2, "0")}
+      </span>
+      {dir === "next" ? (
+        <span className="font-heading text-base font-black leading-none">
+          ›
+        </span>
+      ) : null}
+    </Link>
   );
 }
 
@@ -205,8 +274,8 @@ function RootingGroup({
               />
               <span className="truncate font-medium">{p.name}</span>
             </Link>
-            <span className="flex items-center gap-2">
-              <span className="font-heading text-sm font-bold tabular-nums text-muted-foreground">
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="inline-flex items-center rounded-full border bg-muted/60 px-2 py-0.5 font-heading text-xs font-black tabular-nums">
                 {p.pred_a}–{p.pred_b}
               </span>
               {completed ? <InlinePointsPill points={p.points} /> : null}
