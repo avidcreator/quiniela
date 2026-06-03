@@ -42,6 +42,8 @@ export function PointsRace({
   // viewBox then maps 1:1 to pixels, so nothing is stretched. On desktop the
   // chart fills the container width with an aspect-derived height.
   const [isMobile, setIsMobile] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerW, setContainerW] = useState(0);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
     const update = () => setIsMobile(mq.matches);
@@ -49,9 +51,21 @@ export function PointsRace({
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setContainerW(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const padding = { top: 16, right: 28, bottom: 16, left: 36 };
-  const vbWidth = isMobile ? Math.max(320, n * 48) : 720;
+  // On mobile fill the container; only grow wider (and scroll) when there are
+  // enough matches that each needs ~48px of room.
+  const availW = containerW > 0 ? containerW : 360;
+  const vbWidth = isMobile ? Math.max(availW, n * 48) : 720;
   const vbHeight = isMobile ? 300 : height;
   const innerW = vbWidth - padding.left - padding.right;
   const innerH = vbHeight - padding.top - padding.bottom;
@@ -140,7 +154,7 @@ export function PointsRace({
   const clampedScrub = Math.min(scrubIdx, maxScrub);
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="w-full">
       <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:thin]">
         <div style={{ width: isMobile ? `${vbWidth}px` : undefined }}>
           <div
