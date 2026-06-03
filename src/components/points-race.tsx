@@ -55,6 +55,15 @@ export function PointsRace({
 
   const chartRef = useRef<HTMLDivElement | null>(null);
   const [hover, setHover] = useState<Hover | null>(null);
+  // Tap-to-isolate a player (mobile-friendly, since hover isn't available).
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+
+  // The line currently being emphasized: live hover wins, else the pinned one.
+  const activeId = hover?.playerId ?? pinnedId;
+
+  // Give each match a minimum horizontal slot. When the container is narrower
+  // (mobile), this forces a horizontal scroll instead of squishing everything.
+  const minChartWidth = Math.max(0, n * 44);
 
   if (players.length === 0) return null;
 
@@ -100,6 +109,8 @@ export function PointsRace({
 
   return (
     <div className="w-full">
+      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:thin]">
+        <div style={{ minWidth: minChartWidth ? `${minChartWidth}px` : undefined }}>
       <div
         ref={chartRef}
         className="relative cursor-crosshair select-none"
@@ -160,26 +171,27 @@ export function PointsRace({
                 `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`,
               )
               .join(" ");
-            const dimmed = hover && hover.playerId !== p.player_id;
+            const dimmed = activeId != null && activeId !== p.player_id;
+            const emphasized = activeId === p.player_id;
             return (
               <g key={p.player_id} style={{ color }}>
                 <path
                   d={path}
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth={hover?.playerId === p.player_id ? 3 : 2.25}
+                  strokeWidth={emphasized ? 3 : 2.25}
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                  opacity={dimmed ? 0.2 : 0.9}
+                  opacity={dimmed ? 0.15 : 0.9}
                 />
                 {pointArr.slice(0, -1).map(([x, y], i) => (
                   <circle
                     key={i}
                     cx={x}
                     cy={y}
-                    r={hover?.matchIdx === i && hover.playerId === p.player_id ? 4 : 2}
+                    r={hover?.matchIdx === i && hover.playerId === p.player_id ? 4 : emphasized ? 3 : 2}
                     fill="currentColor"
-                    opacity={dimmed ? 0.2 : 0.7}
+                    opacity={dimmed ? 0.15 : 0.7}
                   />
                 ))}
               </g>
@@ -195,7 +207,7 @@ export function PointsRace({
           const lastY = yFor(p.history[lastIdx]);
           const leftPct = (lastX / vbWidth) * 100;
           const topPct = (lastY / vbHeight) * 100;
-          const dimmed = hover && hover.playerId !== p.player_id;
+          const dimmed = activeId != null && activeId !== p.player_id;
           return (
             <div
               key={p.player_id}
@@ -274,31 +286,49 @@ export function PointsRace({
           <span>{lastDate && lastDate !== firstDate ? shortDate(lastDate) : ""}</span>
         </div>
       ) : null}
+        </div>
+      </div>
 
-      {/* Legend */}
-      <ul className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+      {/* Legend — tap to isolate a line (works on touch where hover can't) */}
+      <ul className="mt-4 flex flex-wrap items-center gap-2 text-xs">
         {players.map((p, idx) => {
           const color = playerColor(idx);
-          const dimmed = hover && hover.playerId !== p.player_id;
+          const dimmed = activeId != null && activeId !== p.player_id;
+          const pinned = pinnedId === p.player_id;
           return (
-            <li
-              key={p.player_id}
-              className="inline-flex items-center gap-2 transition-opacity"
-              style={{ opacity: dimmed ? 0.4 : 1 }}
-            >
-              <span
-                aria-hidden
-                className="inline-block h-0.5 w-5"
-                style={{ background: color }}
-              />
-              <span className="font-medium">{p.name}</span>
-              <span className="font-mono tabular-nums text-muted-foreground">
-                {p.points}
-              </span>
+            <li key={p.player_id}>
+              <button
+                type="button"
+                aria-pressed={pinned}
+                onClick={() =>
+                  setPinnedId((cur) =>
+                    cur === p.player_id ? null : p.player_id,
+                  )
+                }
+                className={`inline-flex items-center gap-2 rounded-full border px-2 py-1 transition ${
+                  pinned
+                    ? "border-foreground bg-foreground/5"
+                    : "border-transparent hover:border-border"
+                }`}
+                style={{ opacity: dimmed ? 0.4 : 1 }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block h-0.5 w-5 shrink-0"
+                  style={{ background: color }}
+                />
+                <span className="font-medium">{p.name}</span>
+                <span className="font-mono tabular-nums text-muted-foreground">
+                  {p.points}
+                </span>
+              </button>
             </li>
           );
         })}
       </ul>
+      <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        Toca un jugador para resaltar su línea
+      </p>
     </div>
   );
 }
