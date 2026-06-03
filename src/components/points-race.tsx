@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TeamFlag } from "./team-flag";
 import { Avatar } from "./avatar";
 import { playerColor } from "@/lib/palette";
@@ -37,9 +37,22 @@ export function PointsRace({
   const n = matchesAsc.length;
   const maxPts = Math.max(1, ...players.flatMap((p) => p.history));
 
+  // On mobile we render the chart at a real pixel size (wide enough that each
+  // match gets room, tall enough to read) and let it scroll horizontally. The
+  // viewBox then maps 1:1 to pixels, so nothing is stretched. On desktop the
+  // chart fills the container width with an aspect-derived height.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const padding = { top: 16, right: 28, bottom: 16, left: 36 };
-  const vbWidth = 720;
-  const vbHeight = height;
+  const vbWidth = isMobile ? Math.max(320, n * 48) : 720;
+  const vbHeight = isMobile ? 300 : height;
   const innerW = vbWidth - padding.left - padding.right;
   const innerH = vbHeight - padding.top - padding.bottom;
 
@@ -58,8 +71,6 @@ export function PointsRace({
   // Selected player (tap a chip below). Powers the mobile scrubber.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [scrubIdx, setScrubIdx] = useState<number>(0);
-
-  const minChartWidth = Math.max(0, n * 44);
 
   if (players.length === 0) return null;
 
@@ -131,9 +142,7 @@ export function PointsRace({
   return (
     <div className="w-full">
       <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:thin]">
-        <div
-          style={{ minWidth: minChartWidth ? `${minChartWidth}px` : undefined }}
-        >
+        <div style={{ width: isMobile ? `${vbWidth}px` : undefined }}>
           <div
             ref={chartRef}
             className="relative cursor-crosshair select-none"
@@ -142,8 +151,7 @@ export function PointsRace({
           >
             <svg
               viewBox={`0 0 ${vbWidth} ${vbHeight}`}
-              className="block h-[300px] w-full sm:h-auto"
-              preserveAspectRatio="none"
+              className="block w-full h-auto"
             >
               {/* Y gridlines + labels */}
               {yTicks.map((t, i) => (
