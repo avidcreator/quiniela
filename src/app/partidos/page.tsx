@@ -73,7 +73,11 @@ export default async function PartidosPage() {
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {upcoming.map((m) => (
-              <UpcomingMatchCard key={m.match_number} match={m} />
+              <UpcomingMatchCard
+                key={m.match_number}
+                match={m}
+                predictions={computeMatchPredictions(snap, m.match_number)}
+              />
             ))}
           </div>
         </section>

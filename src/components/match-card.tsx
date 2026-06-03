@@ -6,8 +6,19 @@ import { commentatorLine } from "@/lib/stats";
 import type { Match } from "@/lib/data";
 import type { PredictionWithPoints } from "@/lib/stats";
 
-export function UpcomingMatchCard({ match }: { match: Match }) {
+export function UpcomingMatchCard({
+  match,
+  predictions = [],
+}: {
+  match: Match;
+  predictions?: PredictionWithPoints[];
+}) {
   const group = match.group;
+  const teamARooters = predictions.filter((p) => p.pred_a > p.pred_b);
+  const drawRooters = predictions.filter((p) => p.pred_a === p.pred_b);
+  const teamBRooters = predictions.filter((p) => p.pred_b > p.pred_a);
+  const hasPredictions = predictions.length > 0;
+
   return (
     <Link
       href={`/partido/${match.match_number}`}
@@ -24,7 +35,73 @@ export function UpcomingMatchCard({ match }: { match: Match }) {
         </span>
         <TeamSide team={match.team_b} align="end" group={group} />
       </div>
+
+      {hasPredictions ? (
+        <div className="border-t">
+          <div className="px-4 pt-2 text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            Pronósticos
+          </div>
+          <div className="grid grid-cols-3 divide-x">
+            <RootingColumn
+              flag={match.team_a}
+              players={teamARooters}
+            />
+            <RootingColumn label="Empate" players={drawRooters} />
+            <RootingColumn flag={match.team_b} players={teamBRooters} />
+          </div>
+        </div>
+      ) : null}
     </Link>
+  );
+}
+
+function RootingColumn({
+  flag,
+  label,
+  players,
+}: {
+  flag?: string;
+  label?: string;
+  players: PredictionWithPoints[];
+}) {
+  const shown = players.slice(0, 6);
+  const extra = players.length - shown.length;
+  return (
+    <div className="flex flex-col items-center gap-1.5 px-2 py-3">
+      <div className="flex items-center gap-1.5">
+        {flag ? (
+          <TeamFlag team={flag} size="xs" />
+        ) : (
+          <span className="font-heading text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            {label}
+          </span>
+        )}
+        <span className="font-heading text-sm font-black tabular-nums">
+          {players.length}
+        </span>
+      </div>
+      {shown.length > 0 ? (
+        <div className="flex items-center">
+          <div className="flex -space-x-1.5">
+            {shown.map((p) => (
+              <Avatar
+                key={p.player_id}
+                name={p.name}
+                imageUrl={p.avatar_url}
+                size="xs"
+              />
+            ))}
+          </div>
+          {extra > 0 ? (
+            <span className="ml-1 font-mono text-[10px] font-bold text-muted-foreground">
+              +{extra}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <span className="text-[10px] text-muted-foreground">—</span>
+      )}
+    </div>
   );
 }
 
