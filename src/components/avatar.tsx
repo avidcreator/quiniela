@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const PALETTE = [
   // monochrome scale — Nike-style, no chromatic variation
   "bg-zinc-900",
@@ -25,6 +27,13 @@ const sizeClass: Record<Size, string> = {
   lg: "size-14 text-lg",
   xl: "size-20 text-2xl",
 };
+const sizePx: Record<Size, number> = {
+  xs: 24,
+  sm: 32,
+  md: 40,
+  lg: 56,
+  xl: 80,
+};
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -48,18 +57,15 @@ export function Avatar({
   const base = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full align-middle font-heading font-bold text-white shadow-sm ring-2 ring-background ${sizeClass[size]} ${dim ? "opacity-50" : ""} ${className}`;
 
   if (imageUrl) {
+    const px = sizePx[size];
     return (
-      <span
-        aria-label={name}
-        title={name}
-        className={`${base} bg-muted`}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <span aria-label={name} title={name} className={`${base} bg-muted`}>
+        <Image
           src={imageUrl}
           alt={name}
+          width={px}
+          height={px}
           className="block size-full object-cover"
-          loading="lazy"
         />
       </span>
     );
