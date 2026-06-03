@@ -29,9 +29,31 @@ export type Snapshot = {
   winner_ids: string[];
 };
 
+// Supabase caps a single select at 1000 rows. With up to 20 players × 72
+// matches = 1440 predictions, so we page through to fetch them all.
+const PAGE_SIZE = 1000;
+
+async function loadAllPredictions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<Prediction[]> {
+  const all: Prediction[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("predictions")
+      .select("player_id, match_number, pred_a, pred_b")
+      .order("player_id", { ascending: true })
+      .order("match_number", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error || !data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 export async function loadSnapshot(): Promise<Snapshot> {
   const supabase = await createClient();
-  const [matchesRes, playersRes, predictionsRes, winnersRes] = await Promise.all([
+  const [matchesRes, playersRes, predictions, winnersRes] = await Promise.all([
     supabase
       .from("matches")
       .select(
@@ -42,16 +64,14 @@ export async function loadSnapshot(): Promise<Snapshot> {
       .from("players")
       .select("id, name, avatar_url")
       .order("name", { ascending: true }),
-    supabase
-      .from("predictions")
-      .select("player_id, match_number, pred_a, pred_b"),
+    loadAllPredictions(supabase),
     supabase.from("winners").select("player_id"),
   ]);
 
   return {
     matches: matchesRes.data ?? [],
     players: playersRes.data ?? [],
-    predictions: predictionsRes.data ?? [],
+    predictions,
     winner_ids: (winnersRes.data ?? []).map((w) => w.player_id),
   };
 }
