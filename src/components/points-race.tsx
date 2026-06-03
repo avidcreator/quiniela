@@ -142,7 +142,7 @@ export function PointsRace({
           >
             <svg
               viewBox={`0 0 ${vbWidth} ${vbHeight}`}
-              className="block w-full h-auto"
+              className="block h-[300px] w-full sm:h-auto"
               preserveAspectRatio="none"
             >
               {/* Y gridlines + labels */}
