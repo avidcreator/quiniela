@@ -37,18 +37,10 @@ export function UpcomingMatchCard({
       </div>
 
       {hasPredictions ? (
-        <div className="border-t">
-          <div className="px-4 pt-2 text-[9px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-            Pronósticos
-          </div>
-          <div className="grid grid-cols-3 divide-x">
-            <RootingColumn
-              flag={match.team_a}
-              players={teamARooters}
-            />
-            <RootingColumn label="Empate" players={drawRooters} />
-            <RootingColumn flag={match.team_b} players={teamBRooters} />
-          </div>
+        <div className="grid grid-cols-3 divide-x border-t opacity-45 transition-opacity duration-200 group-hover:opacity-100">
+          <RootingColumn flag={match.team_a} players={teamARooters} />
+          <RootingColumn label="Empate" players={drawRooters} />
+          <RootingColumn flag={match.team_b} players={teamBRooters} />
         </div>
       ) : null}
     </Link>
@@ -67,7 +59,7 @@ function RootingColumn({
   const shown = players.slice(0, 6);
   const extra = players.length - shown.length;
   return (
-    <div className="flex flex-col items-center gap-1.5 px-2 py-3">
+    <div className="flex flex-col items-center gap-1.5 px-2 py-3 sm:px-3">
       <div className="flex items-center gap-1.5">
         {flag ? (
           <TeamFlag team={flag} size="xs" />
