@@ -22,15 +22,29 @@ import { Sparkline } from "@/components/sparkline";
 import { Ticker } from "@/components/ticker";
 import { Vibes } from "@/components/vibes";
 import { PointsRace } from "@/components/points-race";
+import { Countdown } from "@/components/countdown";
+import { InauguralMatchCard } from "@/components/inaugural-match-card";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const snap = await loadSnapshot();
-  const hasData = snap.matches.length > 0 && snap.players.length > 0;
-  if (!hasData) return <EmptyHome />;
+  if (snap.matches.length === 0) return <EmptyHome />;
 
   const now = Date.now();
+
+  // Before the tournament starts (no match has kicked off and no result has
+  // been entered) show the countdown / hype page instead of the dashboard.
+  const firstKickoffMs = Math.min(
+    ...snap.matches.map((m) => new Date(m.kickoff_at).getTime()),
+  );
+  const anyCompleted = snap.matches.some(isCompleted);
+  if (firstKickoffMs > now && !anyCompleted) {
+    return <PreTournament snap={snap} firstKickoffMs={firstKickoffMs} />;
+  }
+
+  if (snap.players.length === 0) return <EmptyHome />;
   const upcoming = snap.matches
     .filter((m) => !isCompleted(m) && new Date(m.kickoff_at).getTime() >= now)
     .sort(
@@ -391,6 +405,167 @@ function HeaderLink({
       {children}
       <span className="transition-transform group-hover:translate-x-0.5">→</span>
     </Link>
+  );
+}
+
+function PreTournament({
+  snap,
+  firstKickoffMs,
+}: {
+  snap: Awaited<ReturnType<typeof loadSnapshot>>;
+  firstKickoffMs: number;
+}) {
+  const firstIso = new Date(firstKickoffMs).toISOString();
+  const firstKey = matchDateKey(firstIso);
+  const firstDayMatches = snap.matches
+    .filter((m) => matchDateKey(m.kickoff_at) === firstKey)
+    .sort(
+      (a, b) =>
+        new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime(),
+    );
+  // Next matches after the inaugural day (those are already shown above).
+  const firstDayNumbers = new Set(firstDayMatches.map((m) => m.match_number));
+  const upcomingMatches = snap.matches
+    .filter((m) => !firstDayNumbers.has(m.match_number))
+    .sort(
+      (a, b) =>
+        new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime(),
+    )
+    .slice(0, 4);
+  const hasPlayers = snap.players.length > 0;
+  const dayLabel = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "America/Mexico_City",
+  }).format(new Date(firstIso));
+
+  return (
+    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
+      {/* Hype hero */}
+      <section className="relative overflow-hidden rounded-md border-2 border-foreground bg-card px-5 py-12 text-center sm:py-16">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rotate-45 bg-primary/10"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-24 -bottom-24 h-56 w-56 rotate-45 bg-primary/10"
+        />
+        <div className="relative">
+          <div className="mx-auto inline-flex h-28 items-center justify-center overflow-hidden rounded-md bg-white p-2 shadow-sm ring-1 ring-border sm:h-40">
+            <Image
+              src="/wc26-logo.png"
+              alt="FIFA World Cup 2026"
+              width={140}
+              height={200}
+              priority
+              className="h-full w-auto object-contain"
+            />
+          </div>
+          <h1 className="mt-6 font-heading text-3xl font-black uppercase italic leading-none tracking-tight sm:text-5xl">
+            Quiniela FIFA 2026
+          </h1>
+          <div className="mt-2 font-heading text-base font-black uppercase tracking-[0.22em] text-muted-foreground sm:text-xl">
+            Arranca en
+          </div>
+
+          <div className="mt-8">
+            <Countdown targetIso={firstIso} />
+          </div>
+
+          <div className="mt-8 inline-flex flex-wrap items-center justify-center gap-3 border border-foreground/15 px-3 py-1.5 font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="capitalize">{dayLabel}</span>
+            <span className="text-primary">▌</span>
+            <span>{snap.matches.length} partidos</span>
+            {hasPlayers ? (
+              <>
+                <span className="text-primary">▌</span>
+                <span>{snap.players.length} jugadores</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      {/* First day matches + predictions */}
+      {firstDayMatches.length > 0 ? (
+        <section className="mt-12">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Primer día
+          </div>
+          <h2 className="mt-1 font-heading text-2xl font-black tracking-tight sm:text-3xl">
+            Cómo viene la jornada inaugural
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Esto es lo que pronosticó cada quien para los primeros partidos.
+          </p>
+          <div className="mt-4 space-y-4">
+            {firstDayMatches.map((m) => (
+              <InauguralMatchCard
+                key={m.match_number}
+                match={m}
+                predictions={computeMatchPredictions(snap, m.match_number)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Próximos partidos (after the inaugural day) */}
+      {upcomingMatches.length > 0 ? (
+        <section className="mt-12">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
+              Próximos partidos
+            </h2>
+            <Link
+              href="/partidos"
+              className="group inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
+            >
+              Ver todos
+              <span className="transition-transform group-hover:translate-x-0.5">
+                →
+              </span>
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {upcomingMatches.map((m) => (
+              <UpcomingMatchCard
+                key={m.match_number}
+                match={m}
+                predictions={computeMatchPredictions(snap, m.match_number)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Scorecards CTA */}
+      {hasPlayers ? (
+        <section className="mt-12">
+          <Link
+            href="/jugadores"
+            className="group flex items-center justify-between gap-4 rounded-md border-2 border-foreground bg-card px-5 py-5 transition hover:bg-foreground hover:text-background"
+          >
+            <div>
+              <div className="font-heading text-[10px] font-black uppercase tracking-[0.28em] text-primary">
+                Antes de que empiece
+              </div>
+              <div className="mt-1 font-heading text-xl font-black uppercase tracking-tight">
+                Revisa las quinielas de todos
+              </div>
+              <div className="mt-0.5 text-sm text-muted-foreground group-hover:text-background/70">
+                {snap.players.length} jugadores · 72 pronósticos cada uno
+              </div>
+            </div>
+            <span className="font-heading text-3xl font-black transition-transform group-hover:translate-x-1">
+              →
+            </span>
+          </Link>
+        </section>
+      ) : null}
+    </div>
   );
 }
 
