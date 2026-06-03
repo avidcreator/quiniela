@@ -41,6 +41,7 @@ export async function updateMatchAction(formData: FormData) {
   const kickoff = String(formData.get("kickoff_at") ?? "").trim();
   const teamA = String(formData.get("team_a") ?? "").trim();
   const teamB = String(formData.get("team_b") ?? "").trim();
+  const groupRaw = String(formData.get("group") ?? "").trim().toUpperCase();
 
   if (!Number.isInteger(matchNumber)) throw new Error("match_number inválido");
   const date = new Date(kickoff);
@@ -54,6 +55,7 @@ export async function updateMatchAction(formData: FormData) {
       kickoff_at: date.toISOString(),
       team_a: teamA,
       team_b: teamB,
+      group: groupRaw.length > 0 ? groupRaw : null,
     })
     .eq("match_number", matchNumber);
   if (error) throw new Error(error.message);

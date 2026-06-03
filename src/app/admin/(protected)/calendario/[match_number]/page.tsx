@@ -20,7 +20,7 @@ export default async function EditMatchPage({
   const supabase = createServiceClient();
   const { data: match } = await supabase
     .from("matches")
-    .select("match_number, kickoff_at, team_a, team_b")
+    .select("match_number, kickoff_at, team_a, team_b, group")
     .eq("match_number", num)
     .maybeSingle();
 
@@ -51,6 +51,17 @@ export default async function EditMatchPage({
             <Label htmlFor="team_b">Equipo B</Label>
             <Input id="team_b" name="team_b" defaultValue={match.team_b} required />
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="group">Grupo</Label>
+          <Input
+            id="group"
+            name="group"
+            defaultValue={match.group ?? ""}
+            maxLength={2}
+            placeholder="A"
+            className="w-20 uppercase"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="kickoff_at">Inicio</Label>

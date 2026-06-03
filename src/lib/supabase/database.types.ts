@@ -17,6 +17,7 @@ export type Database = {
           actual_a: number | null
           actual_b: number | null
           completed_at: string | null
+          group: string | null
           kickoff_at: string
           match_number: number
           team_a: string
@@ -26,6 +27,7 @@ export type Database = {
           actual_a?: number | null
           actual_b?: number | null
           completed_at?: string | null
+          group?: string | null
           kickoff_at: string
           match_number: number
           team_a: string
@@ -35,6 +37,7 @@ export type Database = {
           actual_a?: number | null
           actual_b?: number | null
           completed_at?: string | null
+          group?: string | null
           kickoff_at?: string
           match_number?: number
           team_a?: string

@@ -3,12 +3,11 @@ import { TeamFlag } from "./team-flag";
 import { Avatar } from "./avatar";
 import { KickoffDate } from "./kickoff-date";
 import { commentatorLine } from "@/lib/stats";
-import { groupLetter } from "@/lib/groups";
 import type { Match } from "@/lib/data";
 import type { PredictionWithPoints } from "@/lib/stats";
 
 export function UpcomingMatchCard({ match }: { match: Match }) {
-  const group = groupLetter(match.match_number);
+  const group = match.group;
   return (
     <Link
       href={`/partido/${match.match_number}`}
@@ -42,7 +41,7 @@ export function RecentResultCard({
   const winners = predictions.filter((p) => p.points === 1);
   const soloStriker = strikers.length === 1 ? strikers[0] : null;
   const quote = commentatorLine(match, predictions);
-  const group = groupLetter(match.match_number);
+  const group = match.group;
 
   return (
     <div className="flex flex-col gap-4">

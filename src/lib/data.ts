@@ -7,6 +7,7 @@ export type Match = {
   kickoff_at: string;
   team_a: string;
   team_b: string;
+  group: string | null;
   actual_a: number | null;
   actual_b: number | null;
   completed_at: string | null;
@@ -34,7 +35,7 @@ export async function loadSnapshot(): Promise<Snapshot> {
     supabase
       .from("matches")
       .select(
-        "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, completed_at",
+        "match_number, kickoff_at, team_a, team_b, group, actual_a, actual_b, completed_at",
       )
       .order("match_number", { ascending: true }),
     supabase

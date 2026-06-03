@@ -5,6 +5,7 @@ export type ScheduleRow = {
   kickoff_at: string;
   team_a: string;
   team_b: string;
+  group: string | null;
 };
 
 export type ParseResult<T> =
@@ -76,11 +77,15 @@ export function parseScheduleCsv(text: string): ParseResult<ScheduleRow> {
       };
     }
 
+    const groupRaw = (row.group ?? row.grupo ?? "").trim().toUpperCase();
+    const group = groupRaw.length > 0 ? groupRaw : null;
+
     rows.push({
       match_number: matchNum,
       kickoff_at: kickoff.toISOString(),
       team_a: teamA,
       team_b: teamB,
+      group,
     });
   }
 
