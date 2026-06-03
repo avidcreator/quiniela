@@ -39,6 +39,33 @@ export async function setScoreAction(formData: FormData) {
   revalidatePath(`/partido/${matchNumber}`);
 }
 
+export async function setWinnersAction(formData: FormData) {
+  await requireAdmin();
+
+  const ids = formData
+    .getAll("winner_ids")
+    .map((v) => String(v))
+    .filter(Boolean);
+
+  const supabase = createServiceClient();
+
+  // Replace the whole winners set: clear, then insert.
+  const { error: delErr } = await supabase
+    .from("winners")
+    .delete()
+    .neq("player_id", "00000000-0000-0000-0000-000000000000");
+  if (delErr) throw new Error(delErr.message);
+
+  if (ids.length > 0) {
+    const rows = ids.map((player_id) => ({ player_id }));
+    const { error: insErr } = await supabase.from("winners").insert(rows);
+    if (insErr) throw new Error(insErr.message);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/resultados");
+}
+
 export async function clearScoreAction(formData: FormData) {
   await requireAdmin();
 

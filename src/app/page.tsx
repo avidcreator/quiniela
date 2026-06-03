@@ -5,6 +5,12 @@ import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
 import { DayCard, type DayCardData } from "@/components/day-card";
 import { PerroSays } from "@/components/perro-says";
 import { generatePerroQuotes } from "@/lib/perro";
+import {
+  PlayerStatsExplorer,
+  WinnerCelebration,
+  type WinnerData,
+} from "@/components/winner-banner";
+import { bestMatchesForPlayer, playerExtendedStats } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
 import { Podium } from "@/components/podium";
 import {
@@ -46,6 +52,22 @@ export default async function Home() {
   const perroQuotes =
     completedCount > 0 ? generatePerroQuotes(snap, leaderboard, 1) : [];
 
+  const winnerSet = new Set(snap.winner_ids);
+  const winnerMatchesAsc = completedAsc.map((m) => ({
+    match_number: m.match_number,
+    team_a: m.team_a,
+    team_b: m.team_b,
+  }));
+
+  // Build a spotlight entry for every player so the banner can switch through
+  // all of them. Winners share rank 1 when declared.
+  const allPlayers: WinnerData[] = leaderboard.map((entry) => ({
+    entry: winnerSet.has(entry.player_id) ? { ...entry, rank: 1 } : entry,
+    bestMatches: bestMatchesForPlayer(snap, entry.player_id, 3),
+    extended: playerExtendedStats(snap, entry.player_id),
+  }));
+  const hasWinners = snap.winner_ids.length > 0;
+
   const today = todayKey();
   const hasRecapToday = snap.matches.some(
     (m) => isCompleted(m) && matchDateKey(m.kickoff_at) === today,
@@ -81,6 +103,25 @@ export default async function Home() {
     <>
       <Ticker matches={tickerMatches} />
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {hasWinners ? (
+          <>
+            <section className="mb-6">
+              <WinnerCelebration
+                winners={allPlayers.filter((p) =>
+                  snap.winner_ids.includes(p.entry.player_id),
+                )}
+              />
+            </section>
+            <section className="mb-10">
+              <PlayerStatsExplorer
+                players={allPlayers}
+                winnerIds={snap.winner_ids}
+                matches={winnerMatchesAsc}
+              />
+            </section>
+          </>
+        ) : null}
+
         {perroQuotes.length > 0 ? (
           <section className="mb-10">
             <PerroSays quotes={perroQuotes} />

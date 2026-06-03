@@ -252,6 +252,122 @@ export function computeMatchPredictions(
   return rows;
 }
 
+export type PlayerExtendedStats = {
+  avg_per_match: number;
+  best_day_points: number;
+  longest_strike_streak: number;
+  longest_dry_streak: number;
+  total_matches_with_points: number;
+};
+
+export function playerExtendedStats(
+  snap: Snapshot,
+  playerId: string,
+): PlayerExtendedStats {
+  const completedAsc = snap.matches
+    .filter(isCompleted)
+    .sort(
+      (a, b) =>
+        new Date(a.completed_at ?? a.kickoff_at).getTime() -
+        new Date(b.completed_at ?? b.kickoff_at).getTime(),
+    );
+  const predIdx = indexPredictions(snap.predictions);
+
+  let totalPoints = 0;
+  let strikeRun = 0;
+  let longestStrike = 0;
+  let dryRun = 0;
+  let longestDry = 0;
+  let matchesWithPoints = 0;
+  const dayTotals = new Map<string, number>();
+
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  for (const m of completedAsc) {
+    const pred = predIdx.get(`${playerId}:${m.match_number}`);
+    const pts = pred ? (pointsForMatch(m, pred) ?? 0) : 0;
+    totalPoints += pts;
+    if (pts > 0) matchesWithPoints += 1;
+
+    if (pts === 3) {
+      strikeRun += 1;
+      longestStrike = Math.max(longestStrike, strikeRun);
+    } else {
+      strikeRun = 0;
+    }
+    if (pts === 0) {
+      dryRun += 1;
+      longestDry = Math.max(longestDry, dryRun);
+    } else {
+      dryRun = 0;
+    }
+
+    const dayKey = fmt.format(new Date(m.kickoff_at));
+    dayTotals.set(dayKey, (dayTotals.get(dayKey) ?? 0) + pts);
+  }
+
+  const matchesPlayed = completedAsc.length;
+  const bestDay = Array.from(dayTotals.values()).reduce(
+    (m, v) => Math.max(m, v),
+    0,
+  );
+
+  return {
+    avg_per_match:
+      matchesPlayed > 0 ? Math.round((totalPoints / matchesPlayed) * 10) / 10 : 0,
+    best_day_points: bestDay,
+    longest_strike_streak: longestStrike,
+    longest_dry_streak: longestDry,
+    total_matches_with_points: matchesWithPoints,
+  };
+}
+
+export type BestMatch = {
+  match_number: number;
+  team_a: string;
+  team_b: string;
+  actual_a: number;
+  actual_b: number;
+  pred_a: number;
+  pred_b: number;
+  points: 1 | 3;
+};
+
+export function bestMatchesForPlayer(
+  snap: Snapshot,
+  playerId: string,
+  limit = 3,
+): BestMatch[] {
+  const out: BestMatch[] = [];
+  const completed = snap.matches.filter(isCompleted);
+  const predIdx = indexPredictions(snap.predictions);
+  for (const m of completed) {
+    const pred = predIdx.get(`${playerId}:${m.match_number}`);
+    if (!pred) continue;
+    const pts = pointsForMatch(m, pred);
+    if (pts !== 1 && pts !== 3) continue;
+    out.push({
+      match_number: m.match_number,
+      team_a: m.team_a,
+      team_b: m.team_b,
+      actual_a: m.actual_a as number,
+      actual_b: m.actual_b as number,
+      pred_a: pred.pred_a,
+      pred_b: pred.pred_b,
+      points: pts,
+    });
+  }
+  out.sort(
+    (a, b) => b.points - a.points || a.match_number - b.match_number,
+  );
+  return out.slice(0, limit);
+}
+
 export function commentatorLine(
   match: Match,
   preds: PredictionWithPoints[],

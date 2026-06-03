@@ -25,11 +25,12 @@ export type Snapshot = {
   matches: Match[];
   players: Player[];
   predictions: Prediction[];
+  winner_ids: string[];
 };
 
 export async function loadSnapshot(): Promise<Snapshot> {
   const supabase = await createClient();
-  const [matchesRes, playersRes, predictionsRes] = await Promise.all([
+  const [matchesRes, playersRes, predictionsRes, winnersRes] = await Promise.all([
     supabase
       .from("matches")
       .select(
@@ -43,12 +44,14 @@ export async function loadSnapshot(): Promise<Snapshot> {
     supabase
       .from("predictions")
       .select("player_id, match_number, pred_a, pred_b"),
+    supabase.from("winners").select("player_id"),
   ]);
 
   return {
     matches: matchesRes.data ?? [],
     players: playersRes.data ?? [],
     predictions: predictionsRes.data ?? [],
+    winner_ids: (winnersRes.data ?? []).map((w) => w.player_id),
   };
 }
 

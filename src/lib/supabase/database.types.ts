@@ -63,6 +63,29 @@ export type Database = {
         }
         Relationships: []
       }
+      winners: {
+        Row: {
+          declared_at: string
+          player_id: string
+        }
+        Insert: {
+          declared_at?: string
+          player_id: string
+        }
+        Update: {
+          declared_at?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "winners_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictions: {
         Row: {
           match_number: number

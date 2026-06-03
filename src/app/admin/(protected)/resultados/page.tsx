@@ -1,7 +1,11 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { loadSnapshot } from "@/lib/data";
+import { computeLeaderboard } from "@/lib/stats";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { clearScoreAction, setScoreAction } from "./actions";
+import { WinnerDialog } from "./winner-dialog";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Resultados · Admin" };
@@ -12,6 +16,10 @@ export default async function ResultadosPage() {
     .from("matches")
     .select("match_number, kickoff_at, team_a, team_b, actual_a, actual_b")
     .order("kickoff_at", { ascending: true });
+
+  const snap = await loadSnapshot();
+  const leaderboard = computeLeaderboard(snap);
+  const winnerSet = new Set(snap.winner_ids);
 
   const pending = (matches ?? []).filter((m) => m.actual_a === null);
   const completed = (matches ?? [])
@@ -32,6 +40,52 @@ export default async function ResultadosPage() {
           se recalculan al instante.
         </p>
       </header>
+
+      <section className="rounded-2xl border-2 border-foreground bg-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              Ganador(es)
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {snap.winner_ids.length === 0
+                ? "Aún no hay ganador declarado."
+                : "Aparecen como campeones en la portada."}
+            </p>
+          </div>
+          {leaderboard.length > 0 ? (
+            <WinnerDialog
+              players={leaderboard.map((e) => ({
+                player_id: e.player_id,
+                name: e.name,
+                avatar_url: e.avatar_url,
+                rank: e.rank,
+                points: e.points,
+              }))}
+              currentWinnerIds={snap.winner_ids}
+            />
+          ) : null}
+        </div>
+
+        {snap.winner_ids.length > 0 ? (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {leaderboard
+              .filter((e) => winnerSet.has(e.player_id))
+              .map((e) => (
+                <li
+                  key={e.player_id}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-600/40 bg-emerald-600/5 px-2.5 py-1 dark:border-emerald-500/40"
+                >
+                  <Avatar name={e.name} imageUrl={e.avatar_url} size="xs" />
+                  <span className="font-medium">{e.name}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {e.points} pts
+                  </span>
+                </li>
+              ))}
+          </ul>
+        ) : null}
+      </section>
 
       <section>
         <h2 className="font-heading text-lg font-semibold">
