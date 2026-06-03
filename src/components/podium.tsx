@@ -55,11 +55,11 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
         })}
       </ul>
 
-      {/* Desktop: vertical bar chart */}
+      {/* Desktop: single-row vertical bar chart with hover focus */}
       <div
-        className="hidden items-end gap-4 sm:grid"
+        className="group/board hidden items-end gap-1.5 sm:grid"
         style={{
-          gridTemplateColumns: `repeat(auto-fit, minmax(72px, 1fr))`,
+          gridTemplateColumns: `repeat(${entries.length}, minmax(0, 1fr))`,
         }}
       >
         {entries.map((e, idx) => {
@@ -71,20 +71,21 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
             <Link
               key={e.player_id}
               href={`/jugador/${e.player_id}`}
-              className="group flex flex-col items-center"
+              title={`${e.name} · ${e.points} pts`}
+              className="group/col flex flex-col items-center rounded-md px-0.5 py-1 transition duration-200 hover:!opacity-100 hover:bg-muted/50 group-hover/board:opacity-40"
             >
               <div
                 className="flex w-full flex-col items-center justify-end"
                 style={{ height: maxBarPx + 32 }}
               >
-                <span className="font-heading text-base font-black leading-none tabular-nums">
+                <span className="font-heading text-base font-black leading-none tabular-nums transition group-hover/col:scale-110">
                   {e.points}
                 </span>
                 <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   pts
                 </span>
                 <div
-                  className="mt-1 w-full rounded-t-sm"
+                  className="mt-1 w-full origin-bottom rounded-t-sm transition-transform duration-200 group-hover/col:scale-y-[1.04]"
                   style={{ height: Math.max(2, barH), background: color }}
                   aria-hidden
                 />
@@ -100,7 +101,7 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
                 style={{ height: 40 }}
               >
                 <div
-                  className={`rounded-full ring-2 ${isFirst ? "ring-primary" : "ring-transparent"}`}
+                  className={`rounded-full ring-2 transition ${isFirst ? "ring-primary" : "ring-transparent group-hover/col:ring-foreground/30"}`}
                 >
                   <Avatar
                     name={e.name}
@@ -109,7 +110,7 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
                   />
                 </div>
               </div>
-              <span className="mt-1 max-w-full truncate text-center text-[11px] font-semibold group-hover:underline">
+              <span className="mt-1 max-w-full truncate text-center text-[11px] font-semibold group-hover/col:underline">
                 {e.name}
               </span>
             </Link>
