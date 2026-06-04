@@ -167,7 +167,7 @@ export function RecentResultCard({
       </Link>
 
       {strikers.length > 0 || winners.length > 0 ? (
-        <div className="space-y-2 px-1 text-xs">
+        <div className="space-y-4 px-1 text-xs">
           {strikers.length > 0 ? (
             <ScorerRow label="Acertaron" players={strikers} variant="strike" />
           ) : null}
@@ -276,17 +276,17 @@ function ScorerRow({
 }) {
   const isStrike = variant === "strike";
   return (
-    <div className="flex items-start gap-3">
-      <span
-        className={`inline-flex w-20 shrink-0 pt-0.5 font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
+    <div>
+      <div
+        className={`font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
           isStrike
             ? "text-emerald-600 dark:text-emerald-400"
             : "text-muted-foreground"
         }`}
       >
         {label}
-      </span>
-      <div className="flex flex-wrap items-center gap-1.5">
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {players.map((p) => (
           <span
             key={p.player_id}

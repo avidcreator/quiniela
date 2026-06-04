@@ -148,7 +148,7 @@ export default async function JugadorPage({
                     {completed ? (
                       <div className="flex flex-col items-center leading-none">
                         <span className="text-[8px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                          Final
+                          Resultado
                         </span>
                         <span className="mt-0.5 font-heading text-base font-black tabular-nums">
                           {m.actual_a}–{m.actual_b}
@@ -169,7 +169,7 @@ export default async function JugadorPage({
                   <div className="flex w-24 shrink-0 items-center justify-end gap-2">
                     <div className="flex flex-col items-end leading-none">
                       <span className="text-[8px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Tu pick
+                        Su pick
                       </span>
                       <span className="mt-0.5 font-heading text-sm font-black tabular-nums text-muted-foreground">
                         {pred ? `${pred.pred_a}–${pred.pred_b}` : "—"}

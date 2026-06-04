@@ -464,7 +464,7 @@ function PreTournament({
             />
           </div>
           <h1 className="mt-6 font-heading text-3xl font-black uppercase italic leading-none tracking-tight sm:text-5xl">
-            Quiniela FIFA 2026
+            FIFA World Cup 2026
           </h1>
           <div className="mt-2 font-heading text-base font-black uppercase tracking-[0.22em] text-muted-foreground sm:text-xl">
             Arranca en

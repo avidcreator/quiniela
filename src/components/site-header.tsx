@@ -20,8 +20,7 @@ export function SiteHeader() {
               className="h-full w-auto object-contain"
             />
           </span>
-          <span className="hidden sm:inline">FIFA World Cup 2026</span>
-          <span className="sm:hidden">WC 2026</span>
+          <span>FIFA World Cup 2026</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           <ThemeToggle />
