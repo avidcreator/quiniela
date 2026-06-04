@@ -133,16 +133,42 @@ export function MatchPanelView({ view }: { view: MatchView }) {
 
   return (
     <div>
-      <header>
-        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Partido {String(view.match_number).padStart(2, "0")}
-          {view.group ? ` · Grupo ${view.group}` : ""} ·{" "}
-          {completed ? "Jugado" : "Por jugarse"}
+      <section className="overflow-hidden rounded-2xl border-2 border-foreground bg-card shadow-sm">
+        {/* Black header bar */}
+        <div className="flex items-center justify-between gap-2 bg-foreground px-4 py-2.5 text-background sm:px-6">
+          <div className="flex items-center gap-2">
+            <span className="font-heading text-[11px] font-black uppercase tracking-[0.24em] text-background/70">
+              Partido {String(view.match_number).padStart(2, "0")}
+            </span>
+            {view.group ? (
+              <span className="rounded-sm bg-background/15 px-1.5 py-0.5 font-heading text-[10px] font-black uppercase tracking-[0.18em]">
+                Grupo {view.group}
+              </span>
+            ) : null}
+          </div>
+          {completed ? (
+            <span className="font-heading text-[10px] font-black uppercase tracking-[0.22em] text-background/70">
+              Jugado
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 font-heading text-[10px] font-black uppercase tracking-[0.22em] text-primary">
+              <span className="size-1.5 rounded-full bg-primary" />
+              Por jugarse
+            </span>
+          )}
         </div>
-      </header>
 
-      <section className="mt-3 overflow-hidden rounded-3xl border bg-card">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-8 sm:gap-6 sm:px-8 sm:py-12">
+        {/* Highlighted date / time band */}
+        <div className="flex items-center justify-center border-b bg-muted/40 px-4 py-2.5 text-center sm:px-6">
+          <KickoffDate
+            iso={view.kickoff_at}
+            variant="long"
+            className="font-heading text-sm font-black uppercase tracking-tight sm:text-base"
+          />
+        </div>
+
+        {/* Teams + score */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-9 sm:gap-6 sm:px-8 sm:py-12">
           <TeamColumn
             team={view.team_a}
             highlight={completed && a! > b!}
@@ -165,10 +191,6 @@ export function MatchPanelView({ view }: { view: MatchView }) {
             highlight={completed && b! > a!}
             dim={completed && b! < a!}
           />
-        </div>
-
-        <div className="border-t bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground sm:px-8">
-          <KickoffDate iso={view.kickoff_at} variant="long" />
         </div>
       </section>
 
