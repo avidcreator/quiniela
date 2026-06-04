@@ -277,32 +277,34 @@ function ScorerRow({
   const isStrike = variant === "strike";
   return (
     <div>
-      <div
-        className={`font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
-          isStrike
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-muted-foreground"
-        }`}
-      >
-        {label}
+      <div className="flex items-center gap-2">
+        <span
+          className={`font-heading text-[10px] font-black uppercase tracking-[0.22em] ${
+            isStrike
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-muted-foreground"
+          }`}
+        >
+          {label}
+        </span>
+        <span
+          className={`rounded-sm px-1 font-heading text-[10px] font-black tabular-nums ${
+            isStrike
+              ? "bg-emerald-600 text-white dark:bg-emerald-500"
+              : "bg-foreground text-background"
+          }`}
+        >
+          +{isStrike ? 3 : 1}
+        </span>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {players.map((p) => (
           <span
             key={p.player_id}
-            className="inline-flex items-center gap-1.5 rounded-full border bg-card px-1.5 py-0.5"
+            className="inline-flex items-center gap-1.5 rounded-full border bg-card py-0.5 pl-0.5 pr-2"
           >
             <Avatar name={p.name} imageUrl={p.avatar_url} size="xs" dim={!isStrike} />
             <span className="text-xs font-medium">{p.name}</span>
-            <span
-              className={`rounded-sm px-1 font-heading text-[10px] font-black tabular-nums ${
-                isStrike
-                  ? "bg-emerald-600 text-white dark:bg-emerald-500"
-                  : "bg-foreground text-background"
-              }`}
-            >
-              +{isStrike ? 3 : 1}
-            </span>
           </span>
         ))}
       </div>
