@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "./avatar";
 import { KickoffDate } from "./kickoff-date";
@@ -34,17 +34,20 @@ export function MatchPager({
   views: MatchView[];
   startIndex: number;
 }) {
-  // Render a buffer of slides on each side so fast flicks can carry across
-  // several without hitting the edge of what's rendered.
+  // `anchor` drives the rendered window; it only changes when the centred slide
+  // nears the window edge. The live centred slide is tracked in a ref so the URL
+  // can update without a re-render — meaning normal scrolling never touches the
+  // DOM (no flashing). RADIUS buffers each side so fast flicks don't stall.
   const RADIUS = 4;
   const total = views.length;
-  const [index, setIndex] = useState(startIndex);
+  const [anchor, setAnchor] = useState(startIndex);
+  const centeredRef = useRef(startIndex);
   const containerRef = useRef<HTMLDivElement>(null);
   const slideEls = useRef<Map<number, HTMLDivElement>>(new Map());
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const lo = Math.max(0, index - RADIUS);
-  const hi = Math.min(total - 1, index + RADIUS);
+  const lo = Math.max(0, anchor - RADIUS);
+  const hi = Math.min(total - 1, anchor + RADIUS);
   const windowIdx: number[] = [];
   for (let i = lo; i <= hi; i++) windowIdx.push(i);
 
@@ -59,26 +62,16 @@ export function MatchPager({
     });
   }
 
-  // Centre the current slide before paint (no flicker when the window shifts).
+  // Re-centre only when the window actually shifts (rare, at rest near the edge).
   useLayoutEffect(() => {
     const c = containerRef.current;
-    const el = slideEls.current.get(index);
+    const el = slideEls.current.get(anchor);
     if (c && el) {
       c.scrollLeft = el.offsetLeft - (c.clientWidth - el.clientWidth) / 2;
     }
     applyOpacity();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
-
-  // Keep the URL in sync without a navigation / reload.
-  useEffect(() => {
-    window.history.replaceState(
-      null,
-      "",
-      `/partido/${views[index].match_number}`,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  }, [anchor]);
 
   function onScroll() {
     applyOpacity();
@@ -97,7 +90,17 @@ export function MatchPager({
           best = gi;
         }
       });
-      if (best >= 0 && best !== index) setIndex(best);
+      if (best < 0) return;
+      if (best !== centeredRef.current) {
+        centeredRef.current = best;
+        window.history.replaceState(
+          null,
+          "",
+          `/partido/${views[best].match_number}`,
+        );
+      }
+      // Only re-buffer (which shifts the DOM) when near the rendered edge.
+      if (Math.abs(best - anchor) >= RADIUS - 1) setAnchor(best);
     }, 70);
   }
 
