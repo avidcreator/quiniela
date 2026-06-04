@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
+import { KickoffDate } from "@/components/kickoff-date";
 import { ScheduleUploadForm } from "./upload-form";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,10 @@ export default async function CalendarioPage() {
                       {m.team_a} <span className="text-muted-foreground">vs</span>{" "}
                       {m.team_b}
                     </div>
-                    <KickoffDate iso={m.kickoff_at} />
+                    <KickoffDate
+                      iso={m.kickoff_at}
+                      className="text-xs text-muted-foreground"
+                    />
                   </div>
                 </div>
                 <Link
@@ -84,15 +88,3 @@ export default async function CalendarioPage() {
   );
 }
 
-function KickoffDate({ iso }: { iso: string }) {
-  const formatter = new Intl.DateTimeFormat("es-MX", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  return (
-    <div className="text-xs text-muted-foreground">{formatter.format(new Date(iso))}</div>
-  );
-}

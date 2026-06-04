@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
+import { KickoffDate } from "@/components/kickoff-date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { clearScoreAction, setScoreAction } from "./actions";
@@ -135,14 +136,6 @@ type Match = {
 };
 
 function MatchRow({ match, completed }: { match: Match; completed: boolean }) {
-  const formatter = new Intl.DateTimeFormat("es-MX", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
   return (
     <li className="rounded-2xl border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -155,9 +148,10 @@ function MatchRow({ match, completed }: { match: Match; completed: boolean }) {
               {match.team_a}{" "}
               <span className="text-muted-foreground">vs</span> {match.team_b}
             </div>
-            <div className="text-xs text-muted-foreground">
-              {formatter.format(new Date(match.kickoff_at))}
-            </div>
+            <KickoffDate
+              iso={match.kickoff_at}
+              className="text-xs text-muted-foreground"
+            />
           </div>
         </div>
         {completed ? (
