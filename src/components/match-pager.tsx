@@ -175,15 +175,6 @@ export function MatchPanelView({ view }: { view: MatchView }) {
 
         {/* Scoreboard */}
         <div className="relative overflow-hidden bg-gradient-to-b from-muted/40 via-card to-card">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rotate-45 bg-primary/10"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rotate-45 bg-primary/10"
-          />
-
           <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-10 sm:gap-6 sm:px-8 sm:py-12">
             <TeamColumn
               team={view.team_a}
