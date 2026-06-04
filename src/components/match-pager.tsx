@@ -34,24 +34,25 @@ export function MatchPager({
   views: MatchView[];
   startIndex: number;
 }) {
+  // Render a buffer of slides on each side so fast flicks can carry across
+  // several without hitting the edge of what's rendered.
+  const RADIUS = 4;
   const total = views.length;
   const [index, setIndex] = useState(startIndex);
   const containerRef = useRef<HTMLDivElement>(null);
-  const slideEls = useRef<(HTMLDivElement | null)[]>([]);
+  const slideEls = useRef<Map<number, HTMLDivElement>>(new Map());
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const lo = Math.max(0, index - 1);
-  const hi = Math.min(total - 1, index + 1);
+  const lo = Math.max(0, index - RADIUS);
+  const hi = Math.min(total - 1, index + RADIUS);
   const windowIdx: number[] = [];
   for (let i = lo; i <= hi; i++) windowIdx.push(i);
-  const localCurrent = index - lo;
 
   function applyOpacity() {
     const c = containerRef.current;
     if (!c) return;
     const center = c.scrollLeft + c.clientWidth / 2;
     slideEls.current.forEach((el) => {
-      if (!el) return;
       const mid = el.offsetLeft + el.clientWidth / 2;
       const t = Math.min(1, Math.abs(mid - center) / el.clientWidth);
       el.style.opacity = String(1 - 0.7 * t);
@@ -61,7 +62,7 @@ export function MatchPager({
   // Centre the current slide before paint (no flicker when the window shifts).
   useLayoutEffect(() => {
     const c = containerRef.current;
-    const el = slideEls.current[localCurrent];
+    const el = slideEls.current.get(index);
     if (c && el) {
       c.scrollLeft = el.offsetLeft - (c.clientWidth - el.clientWidth) / 2;
     }
@@ -71,7 +72,11 @@ export function MatchPager({
 
   // Keep the URL in sync without a navigation / reload.
   useEffect(() => {
-    window.history.replaceState(null, "", `/partido/${views[index].match_number}`);
+    window.history.replaceState(
+      null,
+      "",
+      `/partido/${views[index].match_number}`,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
@@ -84,20 +89,16 @@ export function MatchPager({
       const center = c.scrollLeft + c.clientWidth / 2;
       let best = -1;
       let bestDist = Infinity;
-      slideEls.current.forEach((el, i) => {
-        if (!el) return;
+      slideEls.current.forEach((el, gi) => {
         const mid = el.offsetLeft + el.clientWidth / 2;
         const d = Math.abs(mid - center);
         if (d < bestDist) {
           bestDist = d;
-          best = i;
+          best = gi;
         }
       });
-      if (best >= 0) {
-        const globalIdx = windowIdx[best];
-        if (globalIdx !== index) setIndex(globalIdx);
-      }
-    }, 80);
+      if (best >= 0 && best !== index) setIndex(best);
+    }, 70);
   }
 
   return (
@@ -106,11 +107,12 @@ export function MatchPager({
       onScroll={onScroll}
       className="-mx-4 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain px-[8vw] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      {windowIdx.map((gi, i) => (
+      {windowIdx.map((gi) => (
         <div
           key={views[gi].match_number}
           ref={(el) => {
-            slideEls.current[i] = el;
+            if (el) slideEls.current.set(gi, el);
+            else slideEls.current.delete(gi);
           }}
           className="w-[84vw] shrink-0 snap-center px-1.5"
         >
