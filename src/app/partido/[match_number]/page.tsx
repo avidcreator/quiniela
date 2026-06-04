@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadSnapshot, isCompleted, type Match } from "@/lib/data";
+import { loadSnapshot, isCompleted, type Match, type Snapshot } from "@/lib/data";
 import { computeMatchPredictions, type PredictionWithPoints } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
 import { KickoffDate } from "@/components/kickoff-date";
 import { TeamFlag } from "@/components/team-flag";
-import { MatchSwiper } from "@/components/match-swiper";
+import { MatchSwiper, type PagedSlide } from "@/components/match-swiper";
 
 export const dynamic = "force-dynamic";
 
@@ -31,13 +31,7 @@ export default async function PartidoPage({
   const match = snap.matches.find((m) => m.match_number === num);
   if (!match) notFound();
 
-  const completed = isCompleted(match);
-  const preds = computeMatchPredictions(snap, num);
-  const teamARooters = preds.filter((p) => p.pred_a > p.pred_b);
-  const drawRooters = preds.filter((p) => p.pred_a === p.pred_b);
-  const teamBRooters = preds.filter((p) => p.pred_b > p.pred_a);
-
-  // Previous / next match in the calendar order.
+  // Previous / next match in calendar order.
   const sortedNums = snap.matches
     .map((m) => m.match_number)
     .sort((a, b) => a - b);
@@ -53,8 +47,31 @@ export default async function PartidoPage({
   const prevHref = prevMatch ? `/partido/${prevMatch.match_number}` : null;
   const nextHref = nextMatch ? `/partido/${nextMatch.match_number}` : null;
 
+  const currentPanel = <MatchPanel match={match} snap={snap} />;
+
+  const slides: PagedSlide[] = [];
+  if (prevMatch)
+    slides.push({
+      key: `m-${prevMatch.match_number}`,
+      href: prevHref,
+      current: false,
+      node: <MatchPanel match={prevMatch} snap={snap} />,
+    });
+  slides.push({
+    key: `m-${match.match_number}`,
+    href: null,
+    current: true,
+    node: currentPanel,
+  });
+  if (nextMatch)
+    slides.push({
+      key: `m-${nextMatch.match_number}`,
+      href: nextHref,
+      current: false,
+      node: <MatchPanel match={nextMatch} snap={snap} />,
+    });
+
   return (
-    <MatchSwiper prevHref={prevHref} nextHref={nextHref}>
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Match navigator */}
       <div className="flex items-center justify-between gap-3">
@@ -79,7 +96,27 @@ export default async function PartidoPage({
         Desliza para cambiar de partido
       </p>
 
-      <header className="mt-4">
+      {/* Mobile: native paged scroll with peeking neighbours */}
+      <div className="mt-4 sm:hidden">
+        <MatchSwiper slides={slides} />
+      </div>
+
+      {/* Desktop: just the current match */}
+      <div className="mt-4 hidden sm:block">{currentPanel}</div>
+    </div>
+  );
+}
+
+function MatchPanel({ match, snap }: { match: Match; snap: Snapshot }) {
+  const completed = isCompleted(match);
+  const preds = computeMatchPredictions(snap, match.match_number);
+  const teamARooters = preds.filter((p) => p.pred_a > p.pred_b);
+  const drawRooters = preds.filter((p) => p.pred_a === p.pred_b);
+  const teamBRooters = preds.filter((p) => p.pred_b > p.pred_a);
+
+  return (
+    <div>
+      <header>
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           Partido {String(match.match_number).padStart(2, "0")}
           {match.group ? ` · Grupo ${match.group}` : ""} ·{" "}
@@ -87,8 +124,8 @@ export default async function PartidoPage({
         </div>
       </header>
 
-      <section className="mt-4 overflow-hidden rounded-3xl border bg-card">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-8 sm:gap-6 sm:px-8 sm:py-12">
+      <section className="mt-3 overflow-hidden rounded-3xl border bg-card">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-8 sm:gap-6 sm:px-8 sm:py-12">
           <TeamColumn
             team={match.team_a}
             highlight={completed && match.actual_a! > match.actual_b!}
@@ -129,12 +166,12 @@ export default async function PartidoPage({
           />
         </div>
 
-        <div className="border-t bg-muted/30 px-6 py-3 text-center text-xs text-muted-foreground sm:px-8">
+        <div className="border-t bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground sm:px-8">
           <KickoffDate iso={match.kickoff_at} variant="long" />
         </div>
       </section>
 
-      <section className="mt-8 space-y-4">
+      <section className="mt-6 space-y-4">
         <h2 className="font-heading text-xl font-black tracking-tight">
           Pronósticos
         </h2>
@@ -172,7 +209,6 @@ export default async function PartidoPage({
         )}
       </section>
     </div>
-    </MatchSwiper>
   );
 }
 
@@ -227,7 +263,7 @@ function TeamColumn({
     >
       <TeamFlag team={team} size="xl" />
       <div
-        className={`font-heading text-base font-black sm:text-2xl ${
+        className={`font-heading text-sm font-black sm:text-2xl ${
           dim ? "text-muted-foreground" : ""
         } ${highlight ? "text-foreground" : ""} text-center`}
       >
