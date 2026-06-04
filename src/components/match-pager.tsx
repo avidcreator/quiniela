@@ -131,6 +131,12 @@ export function MatchPanelView({ view }: { view: MatchView }) {
   const a = view.actual_a;
   const b = view.actual_b;
 
+  const total = view.rootA.length + view.rootDraw.length + view.rootB.length;
+  const pct = (x: number) => (total > 0 ? Math.round((x / total) * 100) : 0);
+  const pctA = pct(view.rootA.length);
+  const pctDraw = pct(view.rootDraw.length);
+  const pctB = pct(view.rootB.length);
+
   return (
     <div>
       <section className="overflow-hidden rounded-2xl border-2 border-foreground bg-card shadow-sm">
@@ -167,31 +173,92 @@ export function MatchPanelView({ view }: { view: MatchView }) {
           />
         </div>
 
-        {/* Teams + score */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-9 sm:gap-6 sm:px-8 sm:py-12">
-          <TeamColumn
-            team={view.team_a}
-            highlight={completed && a! > b!}
-            dim={completed && a! < b!}
+        {/* Scoreboard */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-muted/40 via-card to-card">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rotate-45 bg-primary/10"
           />
-          {completed ? (
-            <div className="flex items-baseline gap-2 font-heading text-5xl font-black tabular-nums sm:text-6xl">
-              <span className={a! < b! ? "text-muted-foreground" : ""}>{a}</span>
-              <span className="text-muted-foreground">-</span>
-              <span className={b! < a! ? "text-muted-foreground" : ""}>{b}</span>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rotate-45 bg-primary/10"
+          />
+
+          <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-10 sm:gap-6 sm:px-8 sm:py-12">
+            <TeamColumn
+              team={view.team_a}
+              pct={total > 0 ? pctA : null}
+              highlight={completed && a! > b!}
+              dim={completed && a! < b!}
+            />
+            {completed ? (
+              <div className="flex items-baseline gap-2 font-heading text-6xl font-black tabular-nums sm:text-7xl">
+                <span className={a! < b! ? "text-muted-foreground" : ""}>{a}</span>
+                <span className="text-muted-foreground">-</span>
+                <span className={b! < a! ? "text-muted-foreground" : ""}>{b}</span>
+              </div>
+            ) : (
+              <span className="font-heading text-xl font-black text-muted-foreground">
+                VS
+              </span>
+            )}
+            <TeamColumn
+              team={view.team_b}
+              align="end"
+              pct={total > 0 ? pctB : null}
+              highlight={completed && b! > a!}
+              dim={completed && b! < a!}
+            />
+          </div>
+
+          {/* Sentiment bar */}
+          {total > 0 ? (
+            <div className="relative px-4 pb-7 pt-1 sm:px-8">
+              <div className="flex h-[14px] w-full overflow-hidden rounded-full bg-muted">
+                {view.rootA.length > 0 ? (
+                  <div className="h-full bg-foreground" style={{ width: `${pctA}%` }} />
+                ) : null}
+                {view.rootDraw.length > 0 ? (
+                  <div
+                    className="h-full bg-muted-foreground/40"
+                    style={{ width: `${pctDraw}%` }}
+                  />
+                ) : null}
+                {view.rootB.length > 0 ? (
+                  <div className="h-full bg-primary" style={{ width: `${pctB}%` }} />
+                ) : null}
+              </div>
+              {/* Labels positioned over the centre of each segment */}
+              <div className="relative mt-2 h-3 font-heading text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                {pctA > 0 ? (
+                  <span
+                    className="absolute -translate-x-1/2 whitespace-nowrap"
+                    style={{ left: `${pctA / 2}%` }}
+                  >
+                    {pctA}% Gana
+                  </span>
+                ) : null}
+                {pctDraw > 0 ? (
+                  <span
+                    className="absolute -translate-x-1/2 whitespace-nowrap"
+                    style={{ left: `${pctA + pctDraw / 2}%` }}
+                  >
+                    {pctDraw}% Empate
+                  </span>
+                ) : null}
+                {pctB > 0 ? (
+                  <span
+                    className="absolute -translate-x-1/2 whitespace-nowrap"
+                    style={{ left: `${pctA + pctDraw + pctB / 2}%` }}
+                  >
+                    {pctB}% Gana
+                  </span>
+                ) : null}
+              </div>
             </div>
-          ) : (
-            <span className="font-heading text-lg font-bold text-muted-foreground">
-              VS
-            </span>
-          )}
-          <TeamColumn
-            team={view.team_b}
-            align="end"
-            highlight={completed && b! > a!}
-            dim={completed && b! < a!}
-          />
+          ) : null}
         </div>
+
       </section>
 
       <section className="mt-6 space-y-4">
@@ -240,25 +307,33 @@ function TeamColumn({
   align = "start",
   highlight,
   dim,
+  pct,
 }: {
   team: string;
   align?: "start" | "end";
   highlight?: boolean;
   dim?: boolean;
+  pct?: number | null;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2.5">
       <TeamFlag team={team} size="xl" />
       <div
-        className={`font-heading text-sm font-black sm:text-2xl ${
+        className={`font-heading text-sm font-black uppercase tracking-wide sm:text-2xl ${
           dim ? "text-muted-foreground" : ""
         } ${highlight ? "text-foreground" : ""} text-center`}
       >
         {team}
       </div>
+      {pct != null ? (
+        <div className="font-heading text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+          {pct}%
+        </div>
+      ) : null}
     </div>
   );
 }
+
 
 function RootingGroup({
   heading,
