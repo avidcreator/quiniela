@@ -38,6 +38,8 @@ queda así" projection of who would earn points if the score held.
 - API-Football rate limits apply per plan. The cron makes ~1 call for the live
   list plus 1 call per live match for its events each run; size your plan and the
   cron frequency accordingly (edit the schedule in `vercel.json`).
-- A match auto-completes (sets the real score) when the API reports `FT`/`AET`/
-  `PEN`, so the leaderboard updates without manual entry. The admin can still
-  override scores in **Resultados**.
+- The live feed **never** writes the official result. When the API reports a
+  final status (`FT`/`AET`/`PEN`) the card shows as finalized and lingers for 5
+  minutes, but `actual_a`/`actual_b` (and therefore every player's points) are
+  set **only** from the admin portal → **Resultados**. This keeps scoring under
+  manual control and avoids a wrong/early feed result moving the leaderboard.

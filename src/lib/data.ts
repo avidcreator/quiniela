@@ -53,6 +53,30 @@ export function isLive(m: Match): boolean {
   return m.live_status != null && LIVE_STATUSES.has(m.live_status);
 }
 
+const FINAL_STATUSES = new Set(["FT", "AET", "PEN"]);
+
+/** A live match that has reached a final whistle (full time / extra time /
+ *  penalties), as reported by the live feed. */
+export function isLiveFinal(m: Match): boolean {
+  return m.live_status != null && FINAL_STATUSES.has(m.live_status);
+}
+
+/** How long a just-finished live match keeps showing in the "En vivo"
+ *  section (as a finalized card) before it drops off. */
+export const LIVE_FINAL_GRACE_MS = 5 * 60 * 1000;
+
+/** Whether to render this match in the "En vivo" section: it's currently
+ *  live, or it ended within the last 5 minutes (shown finalized first). */
+export function isLiveVisible(m: Match, now: number): boolean {
+  if (isLive(m)) return true;
+  // The feed freezes `live_updated_at` once a match goes final, so use it
+  // (not `completed_at`, which only the admin portal sets) for the window.
+  if (isLiveFinal(m) && m.live_updated_at) {
+    return now - new Date(m.live_updated_at).getTime() < LIVE_FINAL_GRACE_MS;
+  }
+  return false;
+}
+
 /** The live score mapped to our team_a/team_b orientation. */
 export function liveScore(
   m: Match,

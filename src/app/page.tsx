@@ -3,7 +3,7 @@ import {
   loadSnapshot,
   loadMatchEvents,
   isCompleted,
-  isLive,
+  isLiveVisible,
   liveScore,
 } from "@/lib/data";
 import {
@@ -54,7 +54,7 @@ export default async function Home() {
   );
   const anyCompleted = snap.matches.some(isCompleted);
   const liveMatches = snap.matches
-    .filter(isLive)
+    .filter((m) => isLiveVisible(m, now))
     .sort((a, b) => a.match_number - b.match_number);
 
   if (firstKickoffMs > now && !anyCompleted && liveMatches.length === 0) {

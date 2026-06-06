@@ -19,8 +19,6 @@ const LIVE_STATUSES = new Set([
   "INT",
   "LIVE",
 ]);
-const FINAL_STATUSES = new Set(["FT", "AET", "PEN"]);
-
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
 type MappedMatch = {
@@ -41,17 +39,16 @@ async function applyFixture(
   const home = fx.goals.home ?? 0;
   const away = fx.goals.away ?? 0;
   const status = fx.fixture.status.short;
-  const isFinal = FINAL_STATUSES.has(status);
 
+  // The live feed only ever writes the `live_*` mirror columns. The official
+  // result (`actual_a`/`actual_b` → points) is entered exclusively from the
+  // admin portal, so a final whistle here never auto-scores the leaderboard.
   const patch: {
     live_status: string;
     live_elapsed: number | null;
     live_home: number;
     live_away: number;
     live_updated_at: string;
-    actual_a?: number;
-    actual_b?: number;
-    completed_at?: string;
   } = {
     live_status: status,
     live_elapsed: fx.fixture.status.elapsed,
@@ -59,11 +56,6 @@ async function applyFixture(
     live_away: away,
     live_updated_at: new Date().toISOString(),
   };
-  if (isFinal) {
-    patch.actual_a = homeIsA ? home : away;
-    patch.actual_b = homeIsA ? away : home;
-    if (!match.completed_at) patch.completed_at = new Date().toISOString();
-  }
   await supabase
     .from("matches")
     .update(patch)

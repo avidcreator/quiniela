@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TeamFlag } from "../team-flag";
 import { Avatar } from "../avatar";
 import { LiveMinute } from "./live-minute";
-import type { Match, MatchEvent } from "@/lib/data";
+import { isLiveFinal, type Match, type MatchEvent } from "@/lib/data";
 import type { ForecastEntry } from "@/lib/stats";
 
 export function LiveMatchCard({
@@ -27,6 +27,13 @@ export function LiveMatchCard({
   const pkSlots = pk.length ? Math.max(5, pkA.length, pkB.length) : 0;
   const hasFeed = feedEvents.length > 0;
   const maxForecast = Math.max(1, ...forecast.map((f) => f.points));
+  const isFinal = isLiveFinal(match);
+  const finalLabel =
+    match.live_status === "PEN"
+      ? "Penales"
+      : match.live_status === "AET"
+        ? "Tiempo extra"
+        : "Concluido";
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
@@ -51,24 +58,43 @@ export function LiveMatchCard({
 
         {/* Score card — fixed size, centered */}
         <div
-          className={`relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-md border-2 border-primary bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px] ${
+          className={`relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-md border-2 bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px] ${
             pk.length ? "h-[268px]" : "h-[212px]"
-          }`}
+          } ${isFinal ? "border-foreground/20" : "border-primary"}`}
         >
-          <div className="flex items-end justify-between gap-2 bg-primary px-4 py-2.5 text-primary-foreground">
-            <span className="inline-flex items-center gap-1.5 pb-1 font-heading text-[11px] font-black uppercase tracking-[0.24em]">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary-foreground" />
-              </span>
-              En vivo
-            </span>
-            <LiveMinute
-              elapsed={match.live_elapsed}
-              extra={match.live_elapsed_extra}
-              status={match.live_status ?? ""}
-              updatedAt={match.live_updated_at}
-            />
+          <div
+            className={`flex items-end justify-between gap-2 px-4 py-2.5 ${
+              isFinal
+                ? "bg-foreground text-background"
+                : "bg-primary text-primary-foreground"
+            }`}
+          >
+            {isFinal ? (
+              <>
+                <span className="pb-1 font-heading text-[11px] font-black uppercase tracking-[0.24em]">
+                  Resultado
+                </span>
+                <span className="font-heading text-2xl font-black uppercase leading-none tracking-[0.08em] sm:text-3xl">
+                  Finalizado
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-1.5 pb-1 font-heading text-[11px] font-black uppercase tracking-[0.24em]">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-primary-foreground" />
+                  </span>
+                  En vivo
+                </span>
+                <LiveMinute
+                  elapsed={match.live_elapsed}
+                  extra={match.live_elapsed_extra}
+                  status={match.live_status ?? ""}
+                  updatedAt={match.live_updated_at}
+                />
+              </>
+            )}
           </div>
 
           <Link
@@ -83,13 +109,21 @@ export function LiveMatchCard({
                 </span>
               </div>
               <div className="flex flex-col items-center">
-                <div className="animate-live flex items-baseline gap-2 font-heading text-5xl font-extrabold tabular-nums sm:text-7xl">
+                <div
+                  className={`flex items-baseline gap-2 font-heading text-5xl font-extrabold tabular-nums sm:text-7xl ${
+                    isFinal ? "" : "animate-live"
+                  }`}
+                >
                   <span>{scoreA}</span>
                   <span className="text-muted-foreground/70">-</span>
                   <span>{scoreB}</span>
                 </div>
-                <span className="mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] text-primary">
-                  En juego
+                <span
+                  className={`mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] ${
+                    isFinal ? "text-muted-foreground" : "text-primary"
+                  }`}
+                >
+                  {isFinal ? finalLabel : "En juego"}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-2 text-center">
