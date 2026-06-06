@@ -14,6 +14,7 @@ import {
 } from "@/lib/stats";
 import { LiveMatchCard } from "@/components/live/live-match-card";
 import { LiveRefresher } from "@/components/live/live-refresher";
+import { getLiveEnabled } from "@/lib/settings";
 import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
 import { DayCard, type DayCardData } from "@/components/day-card";
 import { PerroSays } from "@/components/perro-says";
@@ -53,9 +54,12 @@ export default async function Home() {
     ...snap.matches.map((m) => new Date(m.kickoff_at).getTime()),
   );
   const anyCompleted = snap.matches.some(isCompleted);
-  const liveMatches = snap.matches
-    .filter((m) => isLiveVisible(m, now))
-    .sort((a, b) => a.match_number - b.match_number);
+  const liveEnabled = await getLiveEnabled();
+  const liveMatches = liveEnabled
+    ? snap.matches
+        .filter((m) => isLiveVisible(m, now))
+        .sort((a, b) => a.match_number - b.match_number)
+    : [];
 
   if (firstKickoffMs > now && !anyCompleted && liveMatches.length === 0) {
     return <PreTournament snap={snap} firstKickoffMs={firstKickoffMs} />;

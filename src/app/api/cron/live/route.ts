@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pollLive } from "@/lib/live/ingest";
 import { apiConfigured } from "@/lib/live/api-football";
+import { getLiveEnabled } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
       { ok: false, reason: "API_FOOTBALL_KEY no configurado" },
       { status: 200 },
     );
+  }
+
+  if (!(await getLiveEnabled())) {
+    return NextResponse.json({ ok: true, skipped: "live feature disabled" });
   }
 
   try {

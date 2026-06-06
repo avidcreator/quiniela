@@ -6,6 +6,15 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { apiConfigured, fetchSeasonFixtures } from "@/lib/live/api-football";
 import { suggestFixture } from "@/lib/live/match-fixtures";
 import { pollLive } from "@/lib/live/ingest";
+import { setLiveEnabled } from "@/lib/settings";
+
+export async function toggleLiveAction(formData: FormData) {
+  await requireAdmin();
+  const enabled = formData.get("enabled") === "true";
+  await setLiveEnabled(enabled);
+  revalidatePath("/admin/en-vivo");
+  revalidatePath("/");
+}
 
 export async function autoMapAction() {
   await requireAdmin();
@@ -38,33 +47,3 @@ export async function pollNowAction() {
   revalidatePath("/");
 }
 
-export async function setFixtureAction(formData: FormData) {
-  await requireAdmin();
-  const matchNumber = Number(formData.get("match_number"));
-  const rawId = String(formData.get("fixture_id") ?? "").trim();
-  const homeIsA = formData.get("home_is_a") === "on";
-  if (!Number.isInteger(matchNumber)) throw new Error("match_number inválido");
-
-  const supabase = createServiceClient();
-  if (rawId === "") {
-    await supabase
-      .from("matches")
-      .update({
-        api_fixture_id: null,
-        api_home_is_a: null,
-        live_status: null,
-        live_elapsed: null,
-        live_home: null,
-        live_away: null,
-      })
-      .eq("match_number", matchNumber);
-  } else {
-    const fixtureId = Number(rawId);
-    if (!Number.isInteger(fixtureId)) throw new Error("fixture id inválido");
-    await supabase
-      .from("matches")
-      .update({ api_fixture_id: fixtureId, api_home_is_a: homeIsA })
-      .eq("match_number", matchNumber);
-  }
-  revalidatePath("/admin/en-vivo");
-}
