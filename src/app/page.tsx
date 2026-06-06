@@ -1,6 +1,19 @@
 import Link from "next/link";
-import { loadSnapshot, isCompleted } from "@/lib/data";
-import { computeLeaderboard, computeMatchPredictions, type LeaderboardEntry } from "@/lib/stats";
+import {
+  loadSnapshot,
+  loadMatchEvents,
+  isCompleted,
+  isLive,
+  liveScore,
+} from "@/lib/data";
+import {
+  computeLeaderboard,
+  computeMatchPredictions,
+  forecastStandings,
+  type LeaderboardEntry,
+} from "@/lib/stats";
+import { LiveMatchCard } from "@/components/live/live-match-card";
+import { LiveRefresher } from "@/components/live/live-refresher";
 import { buildTickerMatches, matchDateKey, todayKey } from "@/lib/ticker";
 import { DayCard, type DayCardData } from "@/components/day-card";
 import { PerroSays } from "@/components/perro-says";
@@ -40,11 +53,32 @@ export default async function Home() {
     ...snap.matches.map((m) => new Date(m.kickoff_at).getTime()),
   );
   const anyCompleted = snap.matches.some(isCompleted);
-  if (firstKickoffMs > now && !anyCompleted) {
+  const liveMatches = snap.matches
+    .filter(isLive)
+    .sort((a, b) => a.match_number - b.match_number);
+
+  if (firstKickoffMs > now && !anyCompleted && liveMatches.length === 0) {
     return <PreTournament snap={snap} firstKickoffMs={firstKickoffMs} />;
   }
 
   if (snap.players.length === 0) return <EmptyHome />;
+
+  // Live match blocks (score + events + projected points).
+  const liveEvents =
+    liveMatches.length > 0
+      ? await loadMatchEvents(liveMatches.map((m) => m.match_number))
+      : [];
+  const liveBlocks = liveMatches.map((m) => {
+    const sc = liveScore(m) ?? { a: 0, b: 0 };
+    return {
+      match: m,
+      scoreA: sc.a,
+      scoreB: sc.b,
+      events: liveEvents.filter((e) => e.match_number === m.match_number),
+      forecast: forecastStandings(snap, m.match_number, sc.a, sc.b, 5),
+    };
+  });
+
   const upcoming = snap.matches
     .filter((m) => !isCompleted(m) && new Date(m.kickoff_at).getTime() >= now)
     .sort(
@@ -117,6 +151,34 @@ export default async function Home() {
     <>
       <Ticker matches={tickerMatches} />
       <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {liveBlocks.length > 0 ? (
+          <section className="mb-10">
+            <LiveRefresher />
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                  Ahora mismo
+                </div>
+                <h2 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
+                  En vivo
+                </h2>
+              </div>
+            </div>
+            <div className="mt-4 space-y-4">
+              {liveBlocks.map((b) => (
+                <LiveMatchCard
+                  key={b.match.match_number}
+                  match={b.match}
+                  scoreA={b.scoreA}
+                  scoreB={b.scoreB}
+                  events={b.events}
+                  forecast={b.forecast}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {hasWinners ? (
           <>
             <section className="mb-6">

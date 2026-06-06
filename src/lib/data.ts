@@ -11,7 +11,58 @@ export type Match = {
   actual_a: number | null;
   actual_b: number | null;
   completed_at: string | null;
+  // Live (API-Football) fields
+  api_fixture_id: number | null;
+  api_home_is_a: boolean | null;
+  live_status: string | null;
+  live_elapsed: number | null;
+  live_elapsed_extra: number | null;
+  live_home: number | null;
+  live_away: number | null;
+  live_updated_at: string | null;
 };
+
+export type MatchEvent = {
+  id: string;
+  match_number: number;
+  sort_index: number;
+  elapsed: number | null;
+  elapsed_extra: number | null;
+  type: string;
+  detail: string | null;
+  side: string | null; // 'a' | 'b' | null
+  player: string | null;
+  assist: string | null;
+  comments: string | null;
+};
+
+// API-Football live statuses considered "in progress".
+const LIVE_STATUSES = new Set([
+  "1H",
+  "2H",
+  "HT",
+  "ET",
+  "BT",
+  "P",
+  "SUSP",
+  "INT",
+  "LIVE",
+]);
+
+export function isLive(m: Match): boolean {
+  return m.live_status != null && LIVE_STATUSES.has(m.live_status);
+}
+
+/** The live score mapped to our team_a/team_b orientation. */
+export function liveScore(
+  m: Match,
+): { a: number; b: number } | null {
+  if (m.live_home == null || m.live_away == null) return null;
+  const homeIsA = m.api_home_is_a !== false; // default home == team_a
+  return homeIsA
+    ? { a: m.live_home, b: m.live_away }
+    : { a: m.live_away, b: m.live_home };
+}
 
 export type Player = { id: string; name: string; avatar_url: string | null };
 
@@ -51,14 +102,15 @@ async function loadAllPredictions(
   return all;
 }
 
+const MATCH_COLUMNS =
+  "match_number, kickoff_at, team_a, team_b, group, actual_a, actual_b, completed_at, api_fixture_id, api_home_is_a, live_status, live_elapsed, live_elapsed_extra, live_home, live_away, live_updated_at";
+
 export async function loadSnapshot(): Promise<Snapshot> {
   const supabase = await createClient();
   const [matchesRes, playersRes, predictions, winnersRes] = await Promise.all([
     supabase
       .from("matches")
-      .select(
-        "match_number, kickoff_at, team_a, team_b, group, actual_a, actual_b, completed_at",
-      )
+      .select(MATCH_COLUMNS)
       .order("match_number", { ascending: true }),
     supabase
       .from("players")
@@ -74,6 +126,22 @@ export async function loadSnapshot(): Promise<Snapshot> {
     predictions,
     winner_ids: (winnersRes.data ?? []).map((w) => w.player_id),
   };
+}
+
+/** Load the event feed for one or more matches (most-recent first). */
+export async function loadMatchEvents(
+  matchNumbers: number[],
+): Promise<MatchEvent[]> {
+  if (matchNumbers.length === 0) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("match_events")
+    .select(
+      "id, match_number, sort_index, elapsed, elapsed_extra, type, detail, side, player, assist, comments",
+    )
+    .in("match_number", matchNumbers)
+    .order("sort_index", { ascending: false });
+  return data ?? [];
 }
 
 export function isCompleted(m: Match): m is Match & { actual_a: number; actual_b: number } {

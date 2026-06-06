@@ -1,4 +1,5 @@
 import "server-only";
+import { pointsFor } from "./scoring";
 import {
   isCompleted,
   pointsForMatch,
@@ -366,6 +367,89 @@ export function bestMatchesForPlayer(
     (a, b) => b.points - a.points || a.match_number - b.match_number,
   );
   return out.slice(0, limit);
+}
+
+/**
+ * Projected points for every player if the current (live) score holds.
+ * Sorted by projected points desc, then name.
+ */
+export function projectLivePoints(
+  snap: Snapshot,
+  matchNumber: number,
+  scoreA: number,
+  scoreB: number,
+): PredictionWithPoints[] {
+  const rows: PredictionWithPoints[] = snap.players.map((player) => {
+    const pred = snap.predictions.find(
+      (p) => p.player_id === player.id && p.match_number === matchNumber,
+    );
+    const points = pred
+      ? pointsFor(pred.pred_a, pred.pred_b, scoreA, scoreB)
+      : null;
+    return {
+      player_id: player.id,
+      name: player.name,
+      avatar_url: player.avatar_url,
+      pred_a: pred?.pred_a ?? 0,
+      pred_b: pred?.pred_b ?? 0,
+      points,
+    };
+  });
+  rows.sort((x, y) => {
+    const xp = x.points ?? -1;
+    const yp = y.points ?? -1;
+    if (yp !== xp) return yp - xp;
+    return x.name.localeCompare(y.name, "es");
+  });
+  return rows;
+}
+
+export type ForecastEntry = {
+  player_id: string;
+  name: string;
+  avatar_url: string | null;
+  points: number;
+  delta: number;
+  rank: number;
+};
+
+/**
+ * The standings as they WOULD be if the given live match ended at scoreA-scoreB,
+ * added on top of the current (completed-match) points. Co-placed ranks.
+ */
+export function forecastStandings(
+  snap: Snapshot,
+  matchNumber: number,
+  scoreA: number,
+  scoreB: number,
+  topN = 5,
+): ForecastEntry[] {
+  const current = computeLeaderboard(snap);
+  const proj = projectLivePoints(snap, matchNumber, scoreA, scoreB);
+  const deltaById = new Map(proj.map((p) => [p.player_id, p.points ?? 0]));
+
+  const rows = current.map((e) => ({
+    player_id: e.player_id,
+    name: e.name,
+    avatar_url: e.avatar_url,
+    delta: deltaById.get(e.player_id) ?? 0,
+    points: e.points + (deltaById.get(e.player_id) ?? 0),
+  }));
+  rows.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return a.name.localeCompare(b.name, "es");
+  });
+
+  let lastPoints: number | null = null;
+  let lastRank = 0;
+  const ranked: ForecastEntry[] = rows.map((r, idx) => {
+    if (r.points !== lastPoints) {
+      lastRank = idx + 1;
+      lastPoints = r.points;
+    }
+    return { ...r, rank: lastRank };
+  });
+  return ranked.slice(0, topN);
 }
 
 export function commentatorLine(

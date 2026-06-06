@@ -38,6 +38,12 @@ export default async function ProtectedAdminLayout({
           >
             Resultados
           </Link>
+          <Link
+            href="/admin/en-vivo"
+            className="rounded-full px-3 py-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            En vivo
+          </Link>
         </div>
         <form action={logoutAction}>
           <Button type="submit" variant="ghost" size="sm">
