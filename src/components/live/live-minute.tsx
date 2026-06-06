@@ -34,9 +34,31 @@ export function LiveMinute({
     return () => clearInterval(id);
   }, [elapsed, running, updatedAt]);
 
-  if (status === "HT") return <span>Descanso</span>;
-  if (status === "P") return <span>Penales</span>;
-  if (status === "BT") return <span>Pausa</span>;
-  const label = extra ? `${mins}+${extra}'` : `${mins}'`;
-  return <span suppressHydrationWarning>{label}</span>;
+  const word = "font-heading text-xl font-black uppercase tracking-[0.12em] leading-none";
+  if (status === "HT") return <span className={word}>Descanso</span>;
+  if (status === "BT") return <span className={word}>Pausa</span>;
+
+  const clock = (
+    <span
+      suppressHydrationWarning
+      className="flex items-baseline font-mono text-4xl font-black leading-none tabular-nums tracking-tight sm:text-5xl"
+    >
+      {mins}
+      {extra ? <span className="ml-px text-2xl sm:text-3xl">+{extra}</span> : null}
+      <span className="animate-live ml-0.5 text-2xl sm:text-3xl">′</span>
+    </span>
+  );
+
+  if (status === "P") {
+    return (
+      <span className="flex flex-col items-end gap-0.5">
+        {clock}
+        <span className="animate-live font-heading text-[10px] font-black uppercase tracking-[0.2em]">
+          Penales
+        </span>
+      </span>
+    );
+  }
+
+  return clock;
 }

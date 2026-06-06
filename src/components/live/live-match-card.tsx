@@ -18,7 +18,14 @@ export function LiveMatchCard({
   events: MatchEvent[];
   forecast: ForecastEntry[];
 }) {
-  const hasFeed = events.length > 0;
+  const isShootoutKick = (e: MatchEvent) =>
+    (e.comments ?? "").toLowerCase().includes("penalty shootout");
+  const pk = events.filter(isShootoutKick);
+  const feedEvents = pk.length ? events.filter((e) => !isShootoutKick(e)) : events;
+  const pkA = pk.filter((e) => e.side === "a");
+  const pkB = pk.filter((e) => e.side === "b");
+  const pkSlots = pk.length ? Math.max(5, pkA.length, pkB.length) : 0;
+  const hasFeed = feedEvents.length > 0;
   const maxForecast = Math.max(1, ...forecast.map((f) => f.points));
 
   return (
@@ -30,7 +37,7 @@ export function LiveMatchCard({
               Minuto a minuto
             </div>
             <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-              {events.map((e) => (
+              {feedEvents.map((e) => (
                 <EventPill
                   key={e.id}
                   event={e}
@@ -43,23 +50,25 @@ export function LiveMatchCard({
         ) : null}
 
         {/* Score card — fixed size, centered */}
-        <div className="relative z-10 mx-auto flex h-[212px] w-full flex-col overflow-hidden rounded-md border-2 border-primary bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px]">
-          <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2 text-primary-foreground">
-            <span className="inline-flex items-center gap-1.5 font-heading text-[11px] font-black uppercase tracking-[0.24em]">
+        <div
+          className={`relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-md border-2 border-primary bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px] ${
+            pk.length ? "h-[268px]" : "h-[212px]"
+          }`}
+        >
+          <div className="flex items-end justify-between gap-2 bg-primary px-4 py-2.5 text-primary-foreground">
+            <span className="inline-flex items-center gap-1.5 pb-1 font-heading text-[11px] font-black uppercase tracking-[0.24em]">
               <span className="relative flex size-2">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground opacity-75" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary-foreground" />
               </span>
               En vivo
             </span>
-            <span className="font-heading text-[11px] font-black uppercase tracking-[0.24em] tabular-nums">
-              <LiveMinute
-                elapsed={match.live_elapsed}
-                extra={match.live_elapsed_extra}
-                status={match.live_status ?? ""}
-                updatedAt={match.live_updated_at}
-              />
-            </span>
+            <LiveMinute
+              elapsed={match.live_elapsed}
+              extra={match.live_elapsed_extra}
+              status={match.live_status ?? ""}
+              updatedAt={match.live_updated_at}
+            />
           </div>
 
           <Link
@@ -91,6 +100,18 @@ export function LiveMatchCard({
               </div>
             </div>
           </Link>
+
+          {pk.length > 0 ? (
+            <div className="border-t-2 border-primary/15 px-4 py-2">
+              <div className="text-center font-heading text-[8px] font-black uppercase tracking-[0.24em] text-primary">
+                Tanda de penales
+              </div>
+              <div className="mt-1.5 space-y-1.5">
+                <PkRow team={match.team_a} kicks={pkA} slots={pkSlots} />
+                <PkRow team={match.team_b} kicks={pkB} slots={pkSlots} />
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Tabla proyectada — vertical dashed, pulsing bars */}
@@ -145,6 +166,49 @@ export function LiveMatchCard({
   );
 }
 
+function PkRow({
+  team,
+  kicks,
+  slots,
+}: {
+  team: string;
+  kicks: MatchEvent[];
+  slots: number;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2.5">
+      <TeamFlag team={team} size="sm" />
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {Array.from({ length: slots }).map((_, i) => {
+          const k = kicks[i];
+          const state = !k
+            ? "pending"
+            : /(missed|saved|fallad)/i.test(k.detail ?? "")
+              ? "missed"
+              : "scored";
+          return <PkDot key={i} state={state} />;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PkDot({ state }: { state: "scored" | "missed" | "pending" }) {
+  if (state === "scored") {
+    return (
+      <span className="inline-flex size-4 items-center justify-center rounded-full border-2 border-emerald-500">
+        <span className="size-2 rounded-full bg-emerald-500" />
+      </span>
+    );
+  }
+  if (state === "missed") {
+    return <span className="inline-flex size-4 rounded-full border-2 border-red-500" />;
+  }
+  return (
+    <span className="inline-flex size-4 rounded-full border-2 border-muted-foreground/25" />
+  );
+}
+
 function EventPill({
   event,
   teamA,
@@ -156,6 +220,7 @@ function EventPill({
 }) {
   const team = event.side === "a" ? teamA : event.side === "b" ? teamB : null;
   const { icon, accent } = eventIcon(event);
+  const isGoal = event.type.toLowerCase() === "goal";
   const minute =
     event.elapsed != null
       ? event.elapsed_extra
@@ -165,12 +230,26 @@ function EventPill({
 
   return (
     <li>
-      <div className="flex items-center gap-2.5 rounded-md border bg-background px-2.5 py-2">
-        <span className="w-9 shrink-0 text-right font-heading text-xs font-black tabular-nums text-muted-foreground">
+      <div
+        className={`flex items-center gap-2.5 rounded-md border px-2.5 py-2 ${
+          isGoal
+            ? "animate-live border-emerald-500/70 bg-emerald-500/10 shadow-sm shadow-emerald-500/20 dark:bg-emerald-500/15"
+            : "bg-background"
+        }`}
+      >
+        <span
+          className={`w-9 shrink-0 text-right font-heading text-xs font-black tabular-nums ${
+            isGoal
+              ? "text-emerald-700 dark:text-emerald-300"
+              : "text-muted-foreground"
+          }`}
+        >
           {minute}
         </span>
         {team ? <TeamFlag team={team} size="xs" /> : null}
-        <span className="shrink-0 text-base leading-none">{icon}</span>
+        <span className={`shrink-0 leading-none ${isGoal ? "text-xl" : "text-base"}`}>
+          {icon}
+        </span>
         <span className="min-w-0 truncate">
           <span
             className={`font-heading text-[11px] font-black uppercase tracking-wide ${accent}`}
@@ -178,7 +257,13 @@ function EventPill({
             {eventTitle(event)}
           </span>
           {event.player ? (
-            <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+            <span
+              className={`ml-1.5 text-xs font-medium ${
+                isGoal
+                  ? "text-emerald-800 dark:text-emerald-200"
+                  : "text-muted-foreground"
+              }`}
+            >
               {event.player}
             </span>
           ) : null}

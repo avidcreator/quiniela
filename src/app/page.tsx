@@ -164,7 +164,7 @@ export default async function Home() {
                 </h2>
               </div>
             </div>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-10">
               {liveBlocks.map((b) => (
                 <LiveMatchCard
                   key={b.match.match_number}
