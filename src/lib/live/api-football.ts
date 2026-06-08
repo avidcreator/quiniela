@@ -71,10 +71,12 @@ export async function fetchSeasonFixtures(): Promise<ApiFixture[]> {
   return get<ApiFixture[]>("/fixtures", leagueParams());
 }
 
-/** Currently-live fixtures of the configured league. */
+/** Currently-live fixtures of the configured league. Note: no `season` param —
+ *  live fixtures are inherently the current season, and omitting it keeps the
+ *  call working on API-Football's free plan (which blocks future seasons). */
 export async function fetchLiveFixtures(): Promise<ApiFixture[]> {
   return get<ApiFixture[]>("/fixtures", {
-    ...leagueParams(),
+    league: process.env.API_FOOTBALL_LEAGUE ?? "1",
     live: "all",
   });
 }

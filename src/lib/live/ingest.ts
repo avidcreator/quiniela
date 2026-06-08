@@ -23,11 +23,29 @@ type ServiceClient = ReturnType<typeof createServiceClient>;
 
 type MappedMatch = {
   match_number: number;
+  kickoff_at: string;
   api_fixture_id: number | null;
   api_home_is_a: boolean | null;
   live_status: string | null;
   completed_at: string | null;
 };
+
+// A match is worth polling from `ACTIVE_BEFORE` before kickoff until
+// `ACTIVE_AFTER` after it — generous enough to cover halftime, stoppage,
+// extra time, penalties and a kickoff delay.
+const ACTIVE_BEFORE_MS = 5 * 60 * 1000; // 5 min pre-kickoff
+const ACTIVE_AFTER_MS = 3.5 * 60 * 60 * 1000; // 3.5 h after kickoff
+
+/** Whether this match could plausibly be in progress right now, so the cron
+ *  should actually hit the API for it. */
+function needsPolling(m: MappedMatch, now: number): boolean {
+  if (m.api_fixture_id == null) return false;
+  // Already in progress per the last poll → keep polling until it finalizes,
+  // even if it has run past the nominal window.
+  if (m.live_status && LIVE_STATUSES.has(m.live_status)) return true;
+  const kickoff = new Date(m.kickoff_at).getTime();
+  return now >= kickoff - ACTIVE_BEFORE_MS && now <= kickoff + ACTIVE_AFTER_MS;
+}
 
 async function applyFixture(
   supabase: ServiceClient,
@@ -91,21 +109,33 @@ async function applyFixture(
   }
 }
 
-export async function pollLive(): Promise<{ updated: number }> {
+export async function pollLive(): Promise<{
+  updated: number;
+  skipped?: string;
+}> {
   const supabase = createServiceClient();
 
   const { data: matches } = await supabase
     .from("matches")
-    .select("match_number, api_fixture_id, api_home_is_a, live_status, completed_at")
+    .select(
+      "match_number, kickoff_at, api_fixture_id, api_home_is_a, live_status, completed_at",
+    )
     .not("api_fixture_id", "is", null);
 
   if (!matches || matches.length === 0) return { updated: 0 };
+
+  // Only touch the API when at least one match could be in progress right now.
+  // Outside any match window the cron is a no-op (no external request), which
+  // keeps us from burning quota 24/7.
+  const now = Date.now();
+  const active = (matches as MappedMatch[]).filter((m) => needsPolling(m, now));
+  if (active.length === 0) return { updated: 0, skipped: "no match in window" };
 
   const live = await fetchLiveFixtures();
   const liveById = new Map(live.map((f) => [f.fixture.id, f]));
 
   let updated = 0;
-  for (const m of matches as MappedMatch[]) {
+  for (const m of active) {
     if (m.api_fixture_id == null) continue;
     const fx = liveById.get(m.api_fixture_id);
     if (fx) {

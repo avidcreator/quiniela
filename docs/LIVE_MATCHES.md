@@ -35,9 +35,13 @@ queda así" projection of who would earn points if the score held.
 
 - If `API_FOOTBALL_KEY` is unset, the cron is a no-op and nothing breaks — the
   rest of the app works as before.
-- API-Football rate limits apply per plan. The cron makes ~1 call for the live
-  list plus 1 call per live match for its events each run; size your plan and the
-  cron frequency accordingly (edit the schedule in `vercel.json`).
+- API-Football rate limits apply per plan. To avoid burning quota around the
+  clock, `pollLive()` first checks whether any mapped match is in its play
+  window (from ~5 min before kickoff to ~3.5 h after, or any match still flagged
+  live from the previous poll). **If none is, the cron returns immediately and
+  makes no API call.** Only during an actual match does it hit the API (~1 call
+  for the live list + 1 per live match for events). Size your plan and the cron
+  frequency (`vercel.json`) for that in-match rate, not 24/7.
 - The live feed **never** writes the official result. When the API reports a
   final status (`FT`/`AET`/`PEN`) the card shows as finalized and lingers for 5
   minutes, but `actual_a`/`actual_b` (and therefore every player's points) are
