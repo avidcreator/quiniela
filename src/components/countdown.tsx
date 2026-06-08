@@ -10,8 +10,8 @@ function segmentsFor(totalSec: number): Segment[] {
   const minutes = Math.floor((totalSec % 3600) / 60);
   const seconds = totalSec % 60;
 
-  // > 3 days → days + hours + minutes + seconds
-  if (totalSec > 3 * 86400) {
+  // > 48h → days + hours + minutes + seconds
+  if (totalSec > 2 * 86400) {
     return [
       { value: days, label: days === 1 ? "Día" : "Días", pad: false },
       { value: hours, label: "Hrs", pad: true },
@@ -19,7 +19,7 @@ function segmentsFor(totalSec: number): Segment[] {
       { value: seconds, label: "Seg", pad: true },
     ];
   }
-  // ≤ 3 days and ≥ 1h → hours (up to 72) + minutes + seconds
+  // ≤ 48h and ≥ 1h → hours (up to 48) + minutes + seconds
   if (totalSec >= 3600) {
     return [
       { value: Math.floor(totalSec / 3600), label: "Horas", pad: false },
