@@ -39,7 +39,7 @@ export function LiveMatchCard({
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
         {/* Minute-by-minute — borderless, pills, scrollable, matched height */}
         {hasFeed ? (
-          <div className="flex h-[212px] flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
+          <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
             <div className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
               Minuto a minuto
             </div>
@@ -149,7 +149,7 @@ export function LiveMatchCard({
         </div>
 
         {/* Tabla proyectada — vertical dashed, pulsing bars */}
-        <div className="flex h-[212px] flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
+        <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
               Tabla proyectada
@@ -158,13 +158,18 @@ export function LiveMatchCard({
               si termina {scoreA}–{scoreB}
             </span>
           </div>
-          <div className="mt-auto flex items-end justify-between gap-1.5">
+          <div className="mt-auto flex items-end gap-2 overflow-x-auto pb-1">
+            {forecast.length === 0 ? (
+              <span className="text-[10px] font-medium text-muted-foreground">
+                Nadie suma puntos con este marcador.
+              </span>
+            ) : null}
             {forecast.map((e) => {
               const barH = Math.max(4, Math.round((e.points / maxForecast) * 84));
               return (
                 <div
                   key={e.player_id}
-                  className="flex min-w-0 flex-1 flex-col items-center"
+                  className="flex w-11 shrink-0 flex-col items-center"
                 >
                   <span className="font-heading text-sm font-black leading-none tabular-nums">
                     {e.points}

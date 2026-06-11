@@ -79,7 +79,7 @@ export default async function Home() {
       scoreA: sc.a,
       scoreB: sc.b,
       events: liveEvents.filter((e) => e.match_number === m.match_number),
-      forecast: forecastStandings(snap, m.match_number, sc.a, sc.b, 5),
+      forecast: forecastStandings(snap, m.match_number, sc.a, sc.b),
     };
   });
 

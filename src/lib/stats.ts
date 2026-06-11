@@ -414,15 +414,15 @@ export type ForecastEntry = {
 };
 
 /**
- * The standings as they WOULD be if the given live match ended at scoreA-scoreB,
- * added on top of the current (completed-match) points. Co-placed ranks.
+ * Every player who WOULD gain points if the given live match ended at
+ * scoreA-scoreB, with the standings they'd hold (on top of current points).
+ * Ranks are computed over the full table but only point-gainers are returned.
  */
 export function forecastStandings(
   snap: Snapshot,
   matchNumber: number,
   scoreA: number,
   scoreB: number,
-  topN = 5,
 ): ForecastEntry[] {
   const current = computeLeaderboard(snap);
   const proj = projectLivePoints(snap, matchNumber, scoreA, scoreB);
@@ -449,7 +449,8 @@ export function forecastStandings(
     }
     return { ...r, rank: lastRank };
   });
-  return ranked.slice(0, topN);
+  // Only the players who actually gain points from this projected result.
+  return ranked.filter((e) => e.delta > 0);
 }
 
 export function commentatorLine(
