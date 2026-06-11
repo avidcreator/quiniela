@@ -126,34 +126,52 @@ export default async function DiaPage({
     return { player: p, points, strikes, zerosOnly };
   });
 
-  const aciertoDelDia = [...dayTally]
-    .filter((t) => t.strikes > 0)
-    .sort((a, b) => b.strikes - a.strikes || b.points - a.points)[0];
+  // Acierto del día: everyone tied on most aciertos (then most points).
+  const aciertoCandidates = dayTally.filter((t) => t.strikes > 0);
+  const aciertoBest = aciertoCandidates.reduce<(typeof aciertoCandidates)[number] | null>(
+    (best, t) =>
+      !best ||
+      t.strikes > best.strikes ||
+      (t.strikes === best.strikes && t.points > best.points)
+        ? t
+        : best,
+    null,
+  );
+  const aciertoDelDia = aciertoBest
+    ? aciertoCandidates.filter(
+        (t) => t.strikes === aciertoBest.strikes && t.points === aciertoBest.points,
+      )
+    : [];
 
   const vacios = dayTally.filter((t) => t.zerosOnly && t.points === 0);
 
-  const biggestRise = snap.players
-    .map((p) => {
-      const b = beforeRanks.get(p.id) ?? after.length;
-      const a = afterRanks.get(p.id) ?? after.length;
-      return { player: p, delta: b - a };
-    })
-    .filter((x) => x.delta > 0)
-    .sort((a, b) => b.delta - a.delta)[0];
+  // Mayor escalada / caída: everyone tied on the largest move.
+  const rises = snap.players
+    .map((p) => ({
+      player: p,
+      delta:
+        (beforeRanks.get(p.id) ?? after.length) -
+        (afterRanks.get(p.id) ?? after.length),
+    }))
+    .filter((x) => x.delta > 0);
+  const maxRise = rises.reduce((m, x) => Math.max(m, x.delta), 0);
+  const biggestRise = rises.filter((x) => x.delta === maxRise);
 
-  const biggestFall = snap.players
-    .map((p) => {
-      const b = beforeRanks.get(p.id) ?? after.length;
-      const a = afterRanks.get(p.id) ?? after.length;
-      return { player: p, delta: a - b };
-    })
-    .filter((x) => x.delta > 0)
-    .sort((a, b) => b.delta - a.delta)[0];
+  const falls = snap.players
+    .map((p) => ({
+      player: p,
+      delta:
+        (afterRanks.get(p.id) ?? after.length) -
+        (beforeRanks.get(p.id) ?? after.length),
+    }))
+    .filter((x) => x.delta > 0);
+  const maxFall = falls.reduce((m, x) => Math.max(m, x.delta), 0);
+  const biggestFall = falls.filter((x) => x.delta === maxFall);
 
-  const newLeader =
-    after[0] && before[0] && after[0].player_id !== before[0].player_id
-      ? after[0]
-      : null;
+  // New leader(s): when the top changed, show everyone now tied at #1.
+  const leaderChanged =
+    !!after[0] && !!before[0] && after[0].player_id !== before[0].player_id;
+  const newLeaders = leaderChanged ? after.filter((e) => e.rank === 1) : [];
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
@@ -177,46 +195,54 @@ export default async function DiaPage({
         </p>
       </header>
 
-      <section className="mt-10 grid gap-4 sm:grid-cols-2">
-        {newLeader ? (
+      {/* Highlights only render when at least one is a single clear standout. */}
+      {newLeaders.length === 1 ||
+      aciertoDelDia.length === 1 ||
+      biggestRise.length === 1 ||
+      biggestFall.length === 1 ? (
+        <section className="mt-10 grid gap-4 sm:grid-cols-2">
+        {/* Each highlight shows only when there's a single clear standout —
+            a tie among several players isn't noteworthy, so it's hidden. */}
+        {newLeaders.length === 1 ? (
           <Headline
             eyebrow="Nuevo líder"
-            title={newLeader.name}
-            body={`Tomó el #1 con ${newLeader.points} puntos.`}
-            avatar={newLeader.name}
-            avatarUrl={newLeader.avatar_url}
+            title={newLeaders[0].name}
+            body={`Tomó el #1 con ${newLeaders[0].points} puntos.`}
+            avatar={newLeaders[0].name}
+            avatarUrl={newLeaders[0].avatar_url}
             crimson
           />
         ) : null}
-        {aciertoDelDia ? (
+        {aciertoDelDia.length === 1 ? (
           <Headline
             eyebrow="Acierto del día"
-            title={aciertoDelDia.player.name}
-            body={`${aciertoDelDia.strikes} acierto${aciertoDelDia.strikes === 1 ? "" : "s"} hoy. ${aciertoDelDia.points} puntos en el día.`}
-            avatar={aciertoDelDia.player.name}
-            avatarUrl={aciertoDelDia.player.avatar_url}
-            crimson={!newLeader}
+            title={aciertoDelDia[0].player.name}
+            body={`${aciertoDelDia[0].strikes} acierto${aciertoDelDia[0].strikes === 1 ? "" : "s"} hoy. ${aciertoDelDia[0].points} puntos en el día.`}
+            avatar={aciertoDelDia[0].player.name}
+            avatarUrl={aciertoDelDia[0].player.avatar_url}
+            crimson={newLeaders.length !== 1}
           />
         ) : null}
-        {biggestRise ? (
+        {biggestRise.length === 1 ? (
           <Headline
             eyebrow="Mayor escalada"
-            title={biggestRise.player.name}
-            body={`Subió ${biggestRise.delta} lugar${biggestRise.delta === 1 ? "" : "es"} en la tabla.`}
-            avatar={biggestRise.player.name}
-            avatarUrl={biggestRise.player.avatar_url}
+            title={biggestRise[0].player.name}
+            body={`Subió ${maxRise} lugar${maxRise === 1 ? "" : "es"} en la tabla.`}
+            avatar={biggestRise[0].player.name}
+            avatarUrl={biggestRise[0].player.avatar_url}
           />
         ) : null}
-        {biggestFall ? (
+        {biggestFall.length === 1 ? (
           <Headline
             eyebrow="Mayor caída"
-            title={biggestFall.player.name}
-            body={`Bajó ${biggestFall.delta} lugar${biggestFall.delta === 1 ? "" : "es"}.`}
-            avatar={biggestFall.player.name}
-            avatarUrl={biggestFall.player.avatar_url}
+            title={biggestFall[0].player.name}
+            body={`Bajó ${maxFall} lugar${maxFall === 1 ? "" : "es"}.`}
+            avatar={biggestFall[0].player.name}
+            avatarUrl={biggestFall[0].player.avatar_url}
           />
         ) : null}
-      </section>
+        </section>
+      ) : null}
 
       {vacios.length > 0 ? (
         <section className="mt-8 rounded-md border border-dashed bg-muted/30 p-5">
