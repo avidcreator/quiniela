@@ -106,6 +106,22 @@ async function applyFixture(
     await supabase
       .from("match_events")
       .upsert(rows, { onConflict: "match_number,signature", ignoreDuplicates: true });
+
+    // The API returns the full event list each poll, so prune any stored event
+    // that's no longer in it. This removes ghosts left when the API revises an
+    // event's minute (its signature changes → the old one would otherwise
+    // linger as a duplicate) or drops a VAR-disallowed goal.
+    const freshSigs = new Set(rows.map((r) => r.signature));
+    const { data: stored } = await supabase
+      .from("match_events")
+      .select("id, signature")
+      .eq("match_number", match.match_number);
+    const staleIds = (stored ?? [])
+      .filter((e) => !freshSigs.has(e.signature))
+      .map((e) => e.id);
+    if (staleIds.length > 0) {
+      await supabase.from("match_events").delete().in("id", staleIds);
+    }
   }
 }
 

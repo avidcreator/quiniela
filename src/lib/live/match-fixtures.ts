@@ -44,6 +44,7 @@ const EN_CODES: Record<string, string> = {
   tunisia: "tn",
   spain: "es",
   "cape verde": "cv",
+  "cape verde islands": "cv",
   belgium: "be",
   egypt: "eg",
   "saudi arabia": "sa",
