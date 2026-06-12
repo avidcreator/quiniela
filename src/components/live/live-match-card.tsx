@@ -38,11 +38,11 @@ export function LiveMatchCard({
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
         {/* Minute-by-minute — borderless, pills, scrollable, matched height */}
-        {hasFeed ? (
-          <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
-            <div className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
-              Minuto a minuto
-            </div>
+        <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
+          <div className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+            Minuto a minuto
+          </div>
+          {hasFeed ? (
             <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
               {feedEvents.map((e) => (
                 <EventPill
@@ -53,8 +53,14 @@ export function LiveMatchCard({
                 />
               ))}
             </ul>
-          </div>
-        ) : null}
+          ) : (
+            <div className="mt-2 flex flex-1 items-center justify-center rounded-md border border-dashed border-foreground/15">
+              <span className="px-3 text-center text-[11px] font-medium text-muted-foreground">
+                Sin jugadas todavía
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Score card — fixed size, centered */}
         <div
