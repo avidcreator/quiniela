@@ -265,6 +265,7 @@ export default async function Home() {
           <section className="mt-12">
             <SectionHeader
               title="Próximos partidos"
+              note="en tu hora local"
               action={<HeaderLink href="/partidos">Ver todos</HeaderLink>}
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -433,10 +434,12 @@ function Stat({
 function SectionHeader({
   eyebrow,
   title,
+  note,
   action,
 }: {
   eyebrow?: string;
   title: string;
+  note?: string;
   action?: React.ReactNode;
 }) {
   return (
@@ -449,6 +452,11 @@ function SectionHeader({
         ) : null}
         <h2 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
           {title}
+          {note ? (
+            <span className="ml-2 align-baseline text-xs font-medium normal-case tracking-normal text-muted-foreground">
+              · {note}
+            </span>
+          ) : null}
         </h2>
       </div>
       {action}
@@ -584,6 +592,9 @@ function PreTournament({
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-heading text-2xl font-black tracking-tight sm:text-3xl">
               Próximos partidos
+              <span className="ml-2 align-baseline text-xs font-medium normal-case tracking-normal text-muted-foreground">
+                · en tu hora local
+              </span>
             </h2>
             <Link
               href="/partidos"

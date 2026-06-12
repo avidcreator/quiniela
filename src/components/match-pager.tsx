@@ -165,12 +165,15 @@ export function MatchPanelView({ view }: { view: MatchView }) {
         </div>
 
         {/* Highlighted date / time band */}
-        <div className="flex items-center justify-center border-b bg-muted/40 px-4 py-2.5 text-center sm:px-6">
+        <div className="flex flex-col items-center justify-center border-b bg-muted/40 px-4 py-2.5 text-center sm:px-6">
           <KickoffDate
             iso={view.kickoff_at}
             variant="long"
             className="font-heading text-sm font-black uppercase tracking-tight sm:text-base"
           />
+          <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+            en tu hora local
+          </span>
         </div>
 
         {/* Scoreboard */}

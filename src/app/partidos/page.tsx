@@ -45,7 +45,8 @@ export default async function PartidosPage() {
           Partidos
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {completed.length} jugados · {upcoming.length} por jugarse
+          {completed.length} jugados · {upcoming.length} por jugarse · en tu hora
+          local
         </p>
       </header>
 

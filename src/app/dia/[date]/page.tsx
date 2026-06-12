@@ -308,6 +308,9 @@ export default async function DiaPage({
       <section className="mt-12">
         <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
           Partidos del día
+          <span className="ml-2 font-medium normal-case tracking-normal text-muted-foreground/70">
+            · en tu hora local
+          </span>
         </div>
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           {dayMatches.map((m) => (
