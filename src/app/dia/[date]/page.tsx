@@ -145,6 +145,19 @@ export default async function DiaPage({
 
   const vacios = dayTally.filter((t) => t.zerosOnly && t.points === 0);
 
+  // Día dominante: a small group scored far above the field (at least double
+  // the day's average, and a clear minority of players).
+  const dayTotal = dayTally.reduce((s, t) => s + t.points, 0);
+  const fieldAvg = snap.players.length ? dayTotal / snap.players.length : 0;
+  const dayMax = dayTally.reduce((m, t) => Math.max(m, t.points), 0);
+  const dayTopGroup = dayTally.filter((t) => t.points === dayMax);
+  const dominantDay =
+    dayMax >= 4 &&
+    dayMax >= 2 * fieldAvg &&
+    dayTopGroup.length <= Math.max(1, Math.floor(snap.players.length / 3))
+      ? dayTopGroup
+      : [];
+
   // Mayor escalada / caída: everyone tied on the largest move.
   const rises = snap.players
     .map((p) => ({
@@ -194,6 +207,32 @@ export default async function DiaPage({
           {dayTally.reduce((s, t) => s + t.points, 0)} puntos repartidos
         </p>
       </header>
+
+      {dominantDay.length > 0 ? (
+        <section className="mt-8 rounded-md border-2 border-primary bg-primary/5 p-5">
+          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            {dominantDay.length > 1 ? "Se lucieron" : "Se lució"}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {dominantDay.length > 1 ? "Aplastaron al resto" : "Aplastó al resto"}{" "}
+            con {dayMax} puntos — más del doble del promedio del día.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {dominantDay.map((t) => (
+              <li
+                key={t.player.id}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card px-2.5 py-1 text-sm font-bold"
+              >
+                <Avatar name={t.player.name} imageUrl={t.player.avatar_url} size="xs" />
+                <span>{t.player.name}</span>
+                <span className="font-heading text-xs font-black tabular-nums text-primary">
+                  {t.points}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Highlights only render when at least one is a single clear standout. */}
       {newLeaders.length === 1 ||

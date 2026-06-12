@@ -2,6 +2,7 @@ import { TeamFlag } from "./team-flag";
 import type { TickerMatch } from "@/lib/ticker";
 
 const dateFmt = new Intl.DateTimeFormat("es-MX", {
+  timeZone: "America/Mexico_City",
   month: "short",
   day: "numeric",
 });
@@ -39,7 +40,11 @@ export function Ticker({ matches }: { matches: TickerMatch[] }) {
   const segment = (prefix: string, ariaHidden = false) => (
     <div
       aria-hidden={ariaHidden}
-      className="flex min-w-[100vw] shrink-0 items-center whitespace-nowrap"
+      className="flex shrink-0 items-center whitespace-nowrap"
+      // At least a viewport wide so a short result list scrolls past one at a
+      // time instead of its copy sitting beside the original. Inline style
+      // avoids relying on an arbitrary Tailwind class.
+      style={{ minWidth: "100vw" }}
     >
       {matches.map((m, i) => (
         <Item key={`${prefix}-${m.match_number}-${i}`} m={m} />
