@@ -37,8 +37,14 @@ export function LiveMatchCard({
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
-        {/* Minute-by-minute — borderless, pills, scrollable, matched height */}
-        <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
+        {/* Minute-by-minute — borderless, pills, scrollable, matched height.
+            When empty, keep the column on desktop (balances the layout) but
+            drop it entirely on mobile. */}
+        <div
+          className={`h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100 ${
+            hasFeed ? "flex" : "hidden sm:flex"
+          }`}
+        >
           <div className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
             Minuto a minuto
           </div>
