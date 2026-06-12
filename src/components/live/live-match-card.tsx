@@ -281,9 +281,22 @@ function EventPill({
         : `${event.elapsed}'`
       : "";
 
+  // Full text for the hover tooltip, since the pill truncates (e.g. a cambio's
+  // "sale" name gets cut off).
+  const fullText = [
+    minute,
+    eventTitle(event),
+    isSub && event.assist
+      ? `Entra ${event.assist}, Sale ${event.player ?? ""}`.trim()
+      : event.player,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <li>
       <div
+        title={fullText}
         className={`flex items-center gap-2.5 rounded-md border px-2.5 py-2 ${
           isGoal
             ? "animate-live border-emerald-500/70 bg-emerald-500/10 shadow-sm shadow-emerald-500/20 dark:bg-emerald-500/15"
