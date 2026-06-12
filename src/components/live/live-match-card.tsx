@@ -272,6 +272,8 @@ function EventPill({
   const team = event.side === "a" ? teamA : event.side === "b" ? teamB : null;
   const { icon, accent } = eventIcon(event);
   const isGoal = event.type.toLowerCase() === "goal";
+  // API-Football substitutions: `player` is who came OFF, `assist` who came ON.
+  const isSub = event.type.toLowerCase() === "subst";
   const minute =
     event.elapsed != null
       ? event.elapsed_extra
@@ -307,7 +309,17 @@ function EventPill({
           >
             {eventTitle(event)}
           </span>
-          {event.player ? (
+          {isSub && event.assist ? (
+            <span className="ml-1.5 text-xs font-medium">
+              <span className="text-emerald-600 dark:text-emerald-400">
+                ↑ {event.assist}
+              </span>
+              <span className="mx-1 text-muted-foreground/50">·</span>
+              <span className="text-red-600 dark:text-red-400">
+                ↓ {event.player}
+              </span>
+            </span>
+          ) : event.player ? (
             <span
               className={`ml-1.5 text-xs font-medium ${
                 isGoal
