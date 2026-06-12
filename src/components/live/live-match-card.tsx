@@ -178,6 +178,14 @@ export function LiveMatchCard({
             ) : null}
             {forecast.map((e) => {
               const barH = Math.max(4, Math.round((e.points / maxForecast) * 84));
+              // Green for an exact prediction (+3), black for a correct outcome (+1).
+              const isExact = e.delta >= 3;
+              const barCls = isExact
+                ? "border-emerald-500/70 bg-emerald-500/15"
+                : "border-foreground/60 bg-foreground/10";
+              const deltaCls = isExact
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-foreground";
               return (
                 <div
                   key={e.player_id}
@@ -187,7 +195,9 @@ export function LiveMatchCard({
                     {e.points}
                   </span>
                   {e.delta > 0 ? (
-                    <span className="mt-0.5 font-heading text-[8px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span
+                      className={`mt-0.5 font-heading text-[8px] font-black tabular-nums ${deltaCls}`}
+                    >
                       +{e.delta}
                     </span>
                   ) : null}
@@ -196,7 +206,7 @@ export function LiveMatchCard({
                     style={{ height: 84 }}
                   >
                     <div
-                      className="animate-live w-full rounded-t-sm border border-b-0 border-dashed border-primary/70 bg-primary/15"
+                      className={`animate-live w-full rounded-t-sm border border-b-0 border-dashed ${barCls}`}
                       style={{ height: barH }}
                       aria-hidden
                     />
