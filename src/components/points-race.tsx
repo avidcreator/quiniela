@@ -285,30 +285,51 @@ export function PointsRace({
                 : null}
             </svg>
 
-            {/* Avatars at end of each line */}
-            {players.map((p) => {
-              const lastIdx = p.history.length - 1;
-              if (lastIdx < 0) return null;
-              const lastX = xFor(lastIdx);
-              const lastY = yFor(p.history[lastIdx]);
-              const leftPct = (lastX / vbWidth) * 100;
-              const topPct = (lastY / vbHeight) * 100;
-              const dimmed = activeId != null && activeId !== p.player_id;
-              return (
-                <div
-                  key={p.player_id}
-                  className="pointer-events-none absolute transition-opacity"
-                  style={{
-                    left: `${leftPct}%`,
-                    top: `${topPct}%`,
-                    transform: "translate(-50%, -50%)",
-                    opacity: dimmed ? 0.2 : 1,
-                  }}
-                >
-                  <Avatar name={p.name} imageUrl={p.avatar_url} size="xs" />
-                </div>
-              );
-            })}
+            {/* Avatars at the end of each line. Players who finish on the same
+                score share an endpoint, so cluster their avatars (overlapping)
+                instead of stacking them exactly on top of one another. */}
+            {(() => {
+              const groups = new Map<number, typeof players>();
+              for (const p of players) {
+                if (p.history.length === 0) continue;
+                const v = p.history[p.history.length - 1];
+                const arr = groups.get(v);
+                if (arr) arr.push(p);
+                else groups.set(v, [p]);
+              }
+              return [...groups.entries()].map(([value, group]) => {
+                const lastIdx = group[0].history.length - 1;
+                const leftPct = (xFor(lastIdx) / vbWidth) * 100;
+                const topPct = (yFor(value) / vbHeight) * 100;
+                return (
+                  <div
+                    key={value}
+                    className="pointer-events-none absolute flex -space-x-2"
+                    style={{
+                      left: `${leftPct}%`,
+                      top: `${topPct}%`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
+                    {group.map((p, idx) => {
+                      const dimmed = activeId != null && activeId !== p.player_id;
+                      return (
+                        <div
+                          key={p.player_id}
+                          className="transition-opacity"
+                          style={{
+                            opacity: dimmed ? 0.2 : 1,
+                            zIndex: group.length - idx,
+                          }}
+                        >
+                          <Avatar name={p.name} imageUrl={p.avatar_url} size="xs" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()}
 
             {/* Desktop hover tooltip */}
             {hoveredPlayer && hoveredMatch && hoveredPoints !== null ? (
@@ -426,6 +447,9 @@ export function PointsRace({
                   className={`font-mono tabular-nums ${selected ? "text-background/70" : "text-muted-foreground"}`}
                 >
                   {p.points}
+                  <span className="ml-0.5 text-[9px] font-bold uppercase tracking-wide opacity-70">
+                    pts
+                  </span>
                 </span>
               </button>
             );
