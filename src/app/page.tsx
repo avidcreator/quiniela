@@ -3,6 +3,7 @@ import {
   loadSnapshot,
   loadMatchEvents,
   isCompleted,
+  isLive,
   isLiveVisible,
   liveScore,
 } from "@/lib/data";
@@ -58,7 +59,16 @@ export default async function Home() {
   const liveMatches = liveEnabled
     ? snap.matches
         .filter((m) => isLiveVisible(m, now))
-        .sort((a, b) => a.match_number - b.match_number)
+        // In-progress matches first, then just-finished ones; within each, most
+        // recently kicked off at the top.
+        .sort((a, b) => {
+          const aRank = isLive(a) ? 0 : 1;
+          const bRank = isLive(b) ? 0 : 1;
+          if (aRank !== bRank) return aRank - bRank;
+          return (
+            new Date(b.kickoff_at).getTime() - new Date(a.kickoff_at).getTime()
+          );
+        })
     : [];
 
   if (firstKickoffMs > now && !anyCompleted && liveMatches.length === 0) {
