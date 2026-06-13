@@ -84,6 +84,15 @@ export function MatchWhatIf({
     }
     setPickerOpen(false);
   };
+  // Tapping the already-selected player deselects (back to no selection).
+  const togglePlayer = (id: string) => {
+    if (id === focusId) {
+      setFocusId("");
+      return;
+    }
+    const p = players.find((pp) => pp.player_id === id);
+    if (p) pickPlayer(p);
+  };
   const renderOption = (p: BasePlayer) => {
     const active = p.player_id === focusId;
     return (
@@ -173,10 +182,7 @@ export function MatchWhatIf({
                 row={r}
                 max={maxPoints}
                 focus={r.player_id === focusId}
-                onPick={() => {
-                  const p = players.find((pp) => pp.player_id === r.player_id);
-                  if (p) pickPlayer(p);
-                }}
+                onPick={() => togglePlayer(r.player_id)}
               />
             ))}
           </ul>
@@ -279,7 +285,7 @@ export function MatchWhatIf({
                 <button
                   key={p.player_id}
                   type="button"
-                  onClick={() => pickPlayer(p)}
+                  onClick={() => togglePlayer(p.player_id)}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-bold transition-colors ${
                     active
                       ? "border-primary bg-primary text-primary-foreground"

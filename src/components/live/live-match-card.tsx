@@ -166,7 +166,7 @@ export function LiveMatchCard({
               href={`/partido/${match.match_number}`}
               className="mt-auto flex items-center justify-center gap-1.5 bg-primary px-3 py-2.5 font-heading text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Simula otros marcadores
+              Ver proyecciones
               <span aria-hidden>→</span>
             </Link>
           ) : null}
