@@ -68,19 +68,56 @@ export function MatchWhatIf({
   const focusPlayer = players.find((p) => p.player_id === focusId);
 
   const clamp = (n: number) => Math.max(0, Math.min(20, n));
+  const reset = () => {
+    setA(currentScore.a);
+    setB(currentScore.b);
+  };
+  const dialedIsLive = isLive && a === currentScore.a && b === currentScore.b;
 
   const dial = (
-    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4 px-4 py-5 sm:gap-x-4">
-      <TeamInline team={teamA} value={a} onChange={(n) => setA(clamp(n))} />
-      <span className="hidden font-heading text-3xl font-black text-muted-foreground/50 sm:inline">
-        –
-      </span>
-      <TeamInline
-        team={teamB}
-        value={b}
-        onChange={(n) => setB(clamp(n))}
-        reverse
-      />
+    <div className="px-4 py-5">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-4 sm:gap-x-4">
+        <TeamInline team={teamA} value={a} onChange={(n) => setA(clamp(n))} />
+        <span className="hidden font-heading text-3xl font-black text-muted-foreground/50 sm:inline">
+          –
+        </span>
+        <TeamInline
+          team={teamB}
+          value={b}
+          onChange={(n) => setB(clamp(n))}
+          reverse
+        />
+      </div>
+      {/* Make it unmistakable that the dial is a preview, not the real score. */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[11px] font-medium text-muted-foreground">
+        {isLive ? (
+          dialedIsLive ? (
+            <span>
+              <span className="font-bold text-foreground">Simulación:</span> mueve
+              − / + para ver qué pasaría. No cambia el marcador real.
+            </span>
+          ) : (
+            <>
+              <span>
+                <span className="font-bold text-primary">Simulación</span> ·
+                marcador real {currentScore.a}–{currentScore.b}
+              </span>
+              <button
+                type="button"
+                onClick={reset}
+                className="font-bold text-primary hover:underline"
+              >
+                Volver al real
+              </button>
+            </>
+          )
+        ) : (
+          <span>
+            <span className="font-bold text-foreground">Simulación:</span> mueve −
+            / + para probar un marcador.
+          </span>
+        )}
+      </div>
     </div>
   );
 
