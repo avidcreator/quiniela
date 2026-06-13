@@ -68,11 +68,12 @@ export function LiveMatchCard({
           )}
         </div>
 
-        {/* Score card — fixed size, centered */}
+        {/* Score card — fixed size, centered (taller when it has the CTA). */}
         <div
           className={`relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-md border-2 bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px] ${
-            pk.length ? "h-[268px]" : "h-[212px]"
-          } ${isFinal ? "border-foreground/20" : "border-primary"}`}
+            isFinal ? "border-foreground/20" : "border-primary"
+          }`}
+          style={{ height: (pk.length ? 268 : 212) + (isFinal ? 0 : 44) }}
         >
           <div
             className={`flex items-end justify-between gap-2 px-4 py-2.5 ${
@@ -157,6 +158,17 @@ export function LiveMatchCard({
                 <PkRow team={match.team_b} kicks={pkB} slots={pkSlots} />
               </div>
             </div>
+          ) : null}
+
+          {/* CTA — preview the standings under a different scoreline. */}
+          {!isFinal ? (
+            <Link
+              href={`/partido/${match.match_number}`}
+              className="mt-auto flex items-center justify-center gap-1.5 bg-primary px-3 py-2.5 font-heading text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Simula otros marcadores
+              <span aria-hidden>→</span>
+            </Link>
           ) : null}
         </div>
 

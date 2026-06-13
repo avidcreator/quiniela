@@ -111,8 +111,11 @@ export default async function Home() {
   const leaderboard = computeLeaderboard(snap);
   const completedCount = snap.matches.filter(isCompleted).length;
   const tickerMatches = buildTickerMatches(snap);
+  // Hide the commentary while a match is live — the live cards take focus.
   const perroQuotes =
-    completedCount > 0 ? generatePerroQuotes(snap, leaderboard, 1) : [];
+    completedCount > 0 && liveMatches.length === 0
+      ? generatePerroQuotes(snap, leaderboard, 1)
+      : [];
 
   const winnerSet = new Set(snap.winner_ids);
   const winnerMatchesAsc = completedAsc.map((m) => ({

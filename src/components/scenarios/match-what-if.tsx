@@ -54,7 +54,8 @@ export function MatchWhatIf({
   // polling) doesn't clobber the user's dial.
   const [a, setA] = useState(currentScore.a);
   const [b, setB] = useState(currentScore.b);
-  const [focusId, setFocusId] = useState(players[0]?.player_id ?? "");
+  const [focusId, setFocusId] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const isLive = live !== null;
   const label = `Partido ${String(matchNumber).padStart(2, "0")}${
@@ -66,11 +67,44 @@ export function MatchWhatIf({
   const summary = focusId ? scoreSummary(players, focusId, a, b) : null;
   const objective = focusId ? top1Objective(players, focusId, teamA, teamB) : null;
   const focusPlayer = players.find((p) => p.player_id === focusId);
+  const { predGroups, noPredPlayers } = groupByPrediction(players);
 
   const clamp = (n: number) => Math.max(0, Math.min(20, n));
   const reset = () => {
     setA(currentScore.a);
     setB(currentScore.b);
+  };
+  // Selecting a player focuses them AND dials in their predicted scoreline, so
+  // you instantly see "what if their prediction comes true?".
+  const pickPlayer = (p: BasePlayer) => {
+    setFocusId(p.player_id);
+    if (p.pred) {
+      setA(clamp(p.pred.a));
+      setB(clamp(p.pred.b));
+    }
+    setPickerOpen(false);
+  };
+  const renderOption = (p: BasePlayer) => {
+    const active = p.player_id === focusId;
+    return (
+      <button
+        key={p.player_id}
+        type="button"
+        onClick={() => pickPlayer(p)}
+        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+          active ? "bg-primary/10 font-bold" : "hover:bg-muted"
+        }`}
+      >
+        <Avatar name={p.name} imageUrl={p.avatar_url} size="sm" />
+        <span className="min-w-0 flex-1 truncate">{p.name}</span>
+        {p.pred ? (
+          <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 font-heading text-[11px] font-black tabular-nums text-muted-foreground">
+            {p.pred.a}–{p.pred.b}
+          </span>
+        ) : null}
+        {active ? <span className="shrink-0 font-black text-primary">✓</span> : null}
+      </button>
+    );
   };
   const dialedIsLive = isLive && a === currentScore.a && b === currentScore.b;
 
@@ -139,7 +173,10 @@ export function MatchWhatIf({
                 row={r}
                 max={maxPoints}
                 focus={r.player_id === focusId}
-                onPick={() => setFocusId(r.player_id)}
+                onPick={() => {
+                  const p = players.find((pp) => pp.player_id === r.player_id);
+                  if (p) pickPlayer(p);
+                }}
               />
             ))}
           </ul>
@@ -147,16 +184,102 @@ export function MatchWhatIf({
 
         <section>
           <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-            ¿Qué necesita?
+            Cómo le va a cada jugador
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
+
+          {/* Mobile: rich dropdown (one player at a time). Inline (not an
+              absolute overlay) so the card's overflow-hidden can't clip it. */}
+          <div className="mt-3 sm:hidden">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              className="flex w-full items-center gap-2 rounded-md border-2 border-foreground bg-card px-3 py-2"
+            >
+              {focusPlayer ? (
+                <Avatar
+                  name={focusPlayer.name}
+                  imageUrl={focusPlayer.avatar_url}
+                  size="sm"
+                />
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full bg-muted font-heading text-sm font-black text-muted-foreground">
+                  —
+                </span>
+              )}
+              <span
+                className={`min-w-0 flex-1 truncate text-left font-bold ${focusPlayer ? "" : "text-muted-foreground"}`}
+              >
+                {focusPlayer?.name ?? "Elige un jugador"}
+              </span>
+              {focusPlayer?.pred ? (
+                <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 font-heading text-[11px] font-black tabular-nums text-muted-foreground">
+                  {focusPlayer.pred.a}–{focusPlayer.pred.b}
+                </span>
+              ) : null}
+              <span
+                className={`shrink-0 text-muted-foreground transition-transform ${pickerOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              >
+                ▾
+              </span>
+            </button>
+            {pickerOpen ? (
+              <div className="mt-1 max-h-72 overflow-y-auto rounded-md border-2 border-foreground bg-card py-1 shadow-md">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusId("");
+                      setPickerOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+                      focusId === "" ? "bg-primary/10 font-bold" : "hover:bg-muted"
+                    }`}
+                  >
+                    <span className="flex size-8 items-center justify-center rounded-full bg-muted font-heading text-sm font-black text-muted-foreground">
+                      —
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">Ningún jugador</span>
+                    {focusId === "" ? (
+                      <span className="shrink-0 font-black text-primary">✓</span>
+                    ) : null}
+                  </button>
+
+                  {/* Players grouped by their shared predicted scoreline. */}
+                  {predGroups.map((g) => (
+                    <div key={g.key}>
+                      <div className="flex items-center justify-between gap-2 border-y border-border/60 bg-muted/60 px-3 py-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          <TeamFlag team={teamA} size="xs" />
+                          <TeamFlag team={teamB} size="xs" />
+                        </span>
+                        <span className="font-heading text-sm font-black tabular-nums">
+                          {g.a}–{g.b}
+                        </span>
+                      </div>
+                      {g.players.map(renderOption)}
+                    </div>
+                  ))}
+                  {noPredPlayers.length > 0 ? (
+                    <div>
+                      <div className="bg-muted/60 px-3 py-1 font-heading text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                        Sin pronóstico
+                      </div>
+                      {noPredPlayers.map(renderOption)}
+                    </div>
+                  ) : null}
+                </div>
+            ) : null}
+          </div>
+
+          {/* Web: chips */}
+          <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
             {players.map((p) => {
               const active = p.player_id === focusId;
               return (
                 <button
                   key={p.player_id}
                   type="button"
-                  onClick={() => setFocusId(p.player_id)}
+                  onClick={() => pickPlayer(p)}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-bold transition-colors ${
                     active
                       ? "border-primary bg-primary text-primary-foreground"
@@ -165,15 +288,23 @@ export function MatchWhatIf({
                 >
                   <Avatar name={p.name} imageUrl={p.avatar_url} size="xs" />
                   <span>{p.name}</span>
+                  {p.pred ? (
+                    <span
+                      className={`font-heading tabular-nums ${active ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                    >
+                      {p.pred.a}–{p.pred.b}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
           </div>
-          <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 sm:p-5">
+          {focusPlayer ? (
+            <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <Avatar
-                name={focusPlayer?.name ?? ""}
-                imageUrl={focusPlayer?.avatar_url}
+                name={focusPlayer.name}
+                imageUrl={focusPlayer.avatar_url}
                 size="md"
               />
               <div className="min-w-0">
@@ -240,7 +371,8 @@ export function MatchWhatIf({
                 <InsightLine ins={objective} />
               </ul>
             ) : null}
-          </div>
+            </div>
+          ) : null}
         </section>
     </>
   );
@@ -301,6 +433,29 @@ export function MatchWhatIf({
       <div className="mt-6 space-y-6">{body}</div>
     </div>
   );
+}
+
+/** Group players by their predicted scoreline (most-shared first). */
+function groupByPrediction(players: BasePlayer[]) {
+  const map = new Map<
+    string,
+    { key: string; a: number; b: number; players: BasePlayer[] }
+  >();
+  const noPredPlayers: BasePlayer[] = [];
+  for (const p of players) {
+    if (!p.pred) {
+      noPredPlayers.push(p);
+      continue;
+    }
+    const key = `${p.pred.a}-${p.pred.b}`;
+    const g = map.get(key) ?? { key, a: p.pred.a, b: p.pred.b, players: [] };
+    g.players.push(p);
+    map.set(key, g);
+  }
+  const predGroups = [...map.values()].sort(
+    (x, y) => y.players.length - x.players.length || x.a - y.a || x.b - y.b,
+  );
+  return { predGroups, noPredPlayers };
 }
 
 function InsightLine({
