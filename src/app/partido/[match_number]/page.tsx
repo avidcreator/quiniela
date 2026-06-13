@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadSnapshot, isCompleted, type Match } from "@/lib/data";
-import { computeMatchPredictions } from "@/lib/stats";
+import {
+  loadSnapshot,
+  isCompleted,
+  isLiveVisible,
+  liveScore,
+  type Match,
+} from "@/lib/data";
+import { computeMatchPredictions, computeLeaderboard } from "@/lib/stats";
 import { TeamFlag } from "@/components/team-flag";
+import { LiveRefresher } from "@/components/live/live-refresher";
 import {
   MatchPager,
   MatchPanelView,
   type MatchView,
+  type BaseStanding,
 } from "@/components/match-pager";
 
 export const dynamic = "force-dynamic";
@@ -36,9 +44,24 @@ export default async function PartidoPage({
   const startIndex = sorted.findIndex((m) => m.match_number === num);
   if (startIndex < 0) notFound();
 
+  const now = Date.now();
+
+  // Current standings (completed matches only) — shared by every slide's what-if.
+  const base: BaseStanding[] = computeLeaderboard(snap).map((e) => ({
+    player_id: e.player_id,
+    name: e.name,
+    avatar_url: e.avatar_url,
+    basePoints: e.points,
+    baseRank: e.rank,
+  }));
+
+  const anyLive = sorted.some((m) => isLiveVisible(m, now));
+
   // Preload every match's prediction view so paging is instant.
   const views: MatchView[] = sorted.map((m) => {
     const preds = computeMatchPredictions(snap, m.match_number);
+    const live = isLiveVisible(m, now);
+    const sc = live ? (liveScore(m) ?? { a: 0, b: 0 }) : { a: 0, b: 0 };
     return {
       match_number: m.match_number,
       team_a: m.team_a,
@@ -48,6 +71,16 @@ export default async function PartidoPage({
       completed: isCompleted(m),
       actual_a: m.actual_a,
       actual_b: m.actual_b,
+      isLive: live,
+      currentScore: sc,
+      live: live
+        ? {
+            status: m.live_status,
+            elapsed: m.live_elapsed,
+            extra: m.live_elapsed_extra,
+            updatedAt: m.live_updated_at,
+          }
+        : null,
       rootA: preds.filter((p) => p.pred_a > p.pred_b),
       rootDraw: preds.filter((p) => p.pred_a === p.pred_b),
       rootB: preds.filter((p) => p.pred_b > p.pred_a),
@@ -60,6 +93,7 @@ export default async function PartidoPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      {anyLive ? <LiveRefresher /> : null}
       {/* Navigator */}
       <div className="flex items-center justify-between gap-3">
         <div className="hidden sm:block">
@@ -89,12 +123,12 @@ export default async function PartidoPage({
 
       {/* Mobile: native paged scroll */}
       <div className="mt-4 sm:hidden">
-        <MatchPager views={views} startIndex={startIndex} />
+        <MatchPager views={views} startIndex={startIndex} base={base} />
       </div>
 
       {/* Desktop: current match only */}
       <div className="mt-4 hidden sm:block">
-        <MatchPanelView view={views[startIndex]} />
+        <MatchPanelView view={views[startIndex]} base={base} />
       </div>
     </div>
   );
