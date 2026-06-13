@@ -69,10 +69,15 @@ export const LIVE_FINAL_GRACE_MS = 5 * 60 * 1000;
  *  live, or it ended within the last 5 minutes (shown finalized first). */
 export function isLiveVisible(m: Match, now: number): boolean {
   if (isLive(m)) return true;
-  // The feed freezes `live_updated_at` once a match goes final, so use it
-  // (not `completed_at`, which only the admin portal sets) for the window.
-  if (isLiveFinal(m) && m.live_updated_at) {
-    return now - new Date(m.live_updated_at).getTime() < LIVE_FINAL_GRACE_MS;
+  // Just-finished matches linger for a few minutes. Use the most stable finish
+  // time: `completed_at` when set (authoritative, never re-bumped), else the
+  // feed's last update. Using `live_updated_at` alone is unreliable — the cron
+  // can re-touch a finished fixture and keep the grace window from expiring.
+  if (isLiveFinal(m)) {
+    const finishedAt = m.completed_at ?? m.live_updated_at;
+    if (finishedAt) {
+      return now - new Date(finishedAt).getTime() < LIVE_FINAL_GRACE_MS;
+    }
   }
   return false;
 }

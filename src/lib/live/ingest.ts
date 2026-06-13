@@ -38,8 +38,14 @@ const ACTIVE_AFTER_MS = 3.5 * 60 * 60 * 1000; // 3.5 h after kickoff
 
 /** Whether this match could plausibly be in progress right now, so the cron
  *  should actually hit the API for it. */
+const FINAL_STATUSES = new Set(["FT", "AET", "PEN"]);
+
 function needsPolling(m: MappedMatch, now: number): boolean {
   if (m.api_fixture_id == null) return false;
+  // Already over → never poll again. This freezes `live_updated_at` at the
+  // final whistle so the "ended X min ago" grace window can actually expire.
+  if (m.completed_at != null) return false;
+  if (m.live_status && FINAL_STATUSES.has(m.live_status)) return false;
   // Already in progress per the last poll → keep polling until it finalizes,
   // even if it has run past the nominal window.
   if (m.live_status && LIVE_STATUSES.has(m.live_status)) return true;
