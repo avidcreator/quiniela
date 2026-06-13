@@ -8,6 +8,13 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
 
   const maxPts = Math.max(1, ...entries.map((e) => e.points));
 
+  // A rank shared by more than one player is a tie.
+  const rankCounts = new Map<number, number>();
+  for (const e of entries) {
+    rankCounts.set(e.rank, (rankCounts.get(e.rank) ?? 0) + 1);
+  }
+  const isTied = (rank: number) => (rankCounts.get(rank) ?? 0) > 1;
+
   return (
     <>
       {/* Mobile: horizontal bars, one player per row */}
@@ -22,10 +29,17 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
                 href={`/jugador/${e.player_id}`}
                 className="group flex items-center gap-2.5"
               >
-                <span
-                  className={`w-5 shrink-0 text-right font-heading text-xs font-black tabular-nums ${isFirst ? "text-primary" : "text-muted-foreground"}`}
-                >
-                  {e.rank}
+                <span className="flex w-9 shrink-0 flex-col items-end">
+                  <span
+                    className={`font-heading text-xs font-black tabular-nums ${isFirst ? "text-primary" : "text-muted-foreground"}`}
+                  >
+                    #{e.rank}
+                  </span>
+                  {isTied(e.rank) ? (
+                    <span className="text-[8px] font-bold uppercase tracking-wide text-muted-foreground/70">
+                      Empate
+                    </span>
+                  ) : null}
                 </span>
                 <div
                   className={`shrink-0 rounded-full ring-2 ${isFirst ? "ring-primary" : "ring-transparent"}`}
@@ -91,11 +105,16 @@ export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
                 />
               </div>
 
-              <span
-                className={`mt-2 font-heading text-xs font-black tabular-nums ${isFirst ? "text-primary" : "text-muted-foreground"}`}
-              >
-                {e.rank}
-              </span>
+              <div className="mt-2 flex flex-col items-center">
+                <span
+                  className={`font-heading text-xs font-black tabular-nums ${isFirst ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  #{e.rank}
+                </span>
+                <span className="h-3 text-[8px] font-bold uppercase leading-3 tracking-[0.1em] text-muted-foreground/70">
+                  {isTied(e.rank) ? "Empate" : ""}
+                </span>
+              </div>
               <div
                 className="mt-1 flex items-center justify-center"
                 style={{ height: 40 }}
