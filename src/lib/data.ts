@@ -73,6 +73,9 @@ export const LIVE_STALE_MS = 20 * 60 * 1000;
 /** Whether to render this match in the "En vivo" section: it's currently
  *  live (and still being updated), or it ended within the last 5 minutes. */
 export function isLiveVisible(m: Match, now: number): boolean {
+  // A registered result (admin only enters one once a match is over) is the
+  // authoritative "this match is done" signal — never show it as live.
+  if (isCompleted(m)) return false;
   if (isLive(m)) {
     // Guard against matches stuck in a live status (clock ticking forever): if
     // the feed hasn't touched it recently, it's not actually live anymore.
