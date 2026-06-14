@@ -65,10 +65,20 @@ export function isLiveFinal(m: Match): boolean {
  *  section (as a finalized card) before it drops off. */
 export const LIVE_FINAL_GRACE_MS = 5 * 60 * 1000;
 
+/** A genuinely in-progress match is refreshed by the feed every minute. If its
+ *  last update is older than this, the feed has stopped (the match ended or was
+ *  abandoned) and it should no longer count as live. */
+export const LIVE_STALE_MS = 20 * 60 * 1000;
+
 /** Whether to render this match in the "En vivo" section: it's currently
- *  live, or it ended within the last 5 minutes (shown finalized first). */
+ *  live (and still being updated), or it ended within the last 5 minutes. */
 export function isLiveVisible(m: Match, now: number): boolean {
-  if (isLive(m)) return true;
+  if (isLive(m)) {
+    // Guard against matches stuck in a live status (clock ticking forever): if
+    // the feed hasn't touched it recently, it's not actually live anymore.
+    if (!m.live_updated_at) return true;
+    return now - new Date(m.live_updated_at).getTime() < LIVE_STALE_MS;
+  }
   // Just-finished matches linger for a few minutes. Use the most stable finish
   // time: `completed_at` when set (authoritative, never re-bumped), else the
   // feed's last update. Using `live_updated_at` alone is unreliable — the cron
