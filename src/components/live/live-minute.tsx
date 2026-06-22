@@ -37,6 +37,10 @@ export function LiveMinute({
   const word = "font-heading text-xl font-black uppercase tracking-[0.12em] leading-none";
   if (status === "HT") return <span className={word}>Descanso</span>;
   if (status === "BT") return <span className={word}>Pausa</span>;
+  // INT = interrupted (e.g. weather), SUSP = suspended. The API sends
+  // `elapsed: null` here, so without these the clock falls back to "0′".
+  if (status === "INT") return <span className={word}>Interrumpido</span>;
+  if (status === "SUSP") return <span className={word}>Suspendido</span>;
 
   const clock = (
     <span

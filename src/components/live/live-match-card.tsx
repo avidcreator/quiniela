@@ -28,6 +28,7 @@ export function LiveMatchCard({
   const hasFeed = feedEvents.length > 0;
   const maxForecast = Math.max(1, ...forecast.map((f) => f.points));
   const isFinal = isLiveFinal(match);
+  const isPaused = match.live_status === "INT" || match.live_status === "SUSP";
   const finalLabel =
     match.live_status === "PEN"
       ? "Penales"
@@ -136,7 +137,7 @@ export function LiveMatchCard({
                     isFinal ? "text-muted-foreground" : "text-primary"
                   }`}
                 >
-                  {isFinal ? finalLabel : "En juego"}
+                  {isFinal ? finalLabel : isPaused ? "En pausa" : "En juego"}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-2 text-center">
