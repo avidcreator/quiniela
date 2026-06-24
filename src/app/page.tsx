@@ -93,13 +93,19 @@ export default async function Home() {
     };
   });
 
-  const upcoming = snap.matches
+  const upcomingAll = snap.matches
     .filter((m) => !isCompleted(m) && new Date(m.kickoff_at).getTime() >= now)
     .sort(
       (a, b) =>
         new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime(),
-    )
-    .slice(0, 4);
+    );
+  // Show every match on the same calendar day as the next upcoming one.
+  const upcomingDayKey = upcomingAll[0]
+    ? matchDateKey(upcomingAll[0].kickoff_at)
+    : null;
+  const upcoming = upcomingAll.filter(
+    (m) => matchDateKey(m.kickoff_at) === upcomingDayKey,
+  );
 
   const completedAsc = snap.matches.filter(isCompleted).sort((a, b) => {
     const at = new Date(a.completed_at ?? a.kickoff_at).getTime();
