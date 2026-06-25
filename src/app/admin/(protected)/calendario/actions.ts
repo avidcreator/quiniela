@@ -1,5 +1,6 @@
 "use server";
 
+import { TABLES } from "@/lib/supabase/tables";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/session";
@@ -24,7 +25,7 @@ export async function uploadScheduleAction(
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from("matches").upsert(parsed.rows, {
+  const { error } = await supabase.from(TABLES.matches).upsert(parsed.rows, {
     onConflict: "match_number",
   });
   if (error) return { error: `Error al guardar: ${error.message}` };
@@ -50,7 +51,7 @@ export async function updateMatchAction(formData: FormData) {
 
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .update({
       kickoff_at: date.toISOString(),
       team_a: teamA,

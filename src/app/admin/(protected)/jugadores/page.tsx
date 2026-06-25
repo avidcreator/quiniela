@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/avatar";
@@ -11,7 +12,7 @@ export const metadata = { title: "Jugadores · Admin" };
 export default async function PlayersPage() {
   const supabase = createServiceClient();
   const { data: players } = await supabase
-    .from("players")
+    .from(TABLES.players)
     .select("id, name, avatar_url, created_at")
     .order("name", { ascending: true });
 

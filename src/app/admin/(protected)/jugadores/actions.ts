@@ -1,5 +1,6 @@
 "use server";
 
+import { TABLES } from "@/lib/supabase/tables";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/session";
@@ -38,7 +39,7 @@ export async function createPlayerAction(
   const supabase = createServiceClient();
 
   const { count } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number", { count: "exact", head: true });
   if ((count ?? 0) !== 72) {
     return {
@@ -48,7 +49,7 @@ export async function createPlayerAction(
   }
 
   const { data: player, error: playerErr } = await supabase
-    .from("players")
+    .from(TABLES.players)
     .insert({ name })
     .select("id")
     .single();
@@ -63,7 +64,7 @@ export async function createPlayerAction(
   // Optional avatar upload — if any failure, roll back the player + abort.
   if (avatarFile instanceof File && avatarFile.size > 0) {
     if (!avatarFile.type.startsWith("image/")) {
-      await supabase.from("players").delete().eq("id", player.id);
+      await supabase.from(TABLES.players).delete().eq("id", player.id);
       return { error: "La foto debe ser una imagen." };
     }
     const ext = fileExtension(avatarFile) || "png";
@@ -77,17 +78,17 @@ export async function createPlayerAction(
         upsert: true,
       });
     if (upErr) {
-      await supabase.from("players").delete().eq("id", player.id);
+      await supabase.from(TABLES.players).delete().eq("id", player.id);
       return { error: `Error al subir la foto: ${upErr.message}` };
     }
 
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const { error: updErr } = await supabase
-      .from("players")
+      .from(TABLES.players)
       .update({ avatar_url: pub.publicUrl })
       .eq("id", player.id);
     if (updErr) {
-      await supabase.from("players").delete().eq("id", player.id);
+      await supabase.from(TABLES.players).delete().eq("id", player.id);
       return { error: `Error al guardar la foto: ${updErr.message}` };
     }
   }
@@ -100,11 +101,11 @@ export async function createPlayerAction(
   }));
 
   const { error: predErr } = await supabase
-    .from("predictions")
+    .from(TABLES.predictions)
     .insert(predictions);
 
   if (predErr) {
-    await supabase.from("players").delete().eq("id", player.id);
+    await supabase.from(TABLES.players).delete().eq("id", player.id);
     return { error: `Error al guardar quiniela: ${predErr.message}` };
   }
 
@@ -129,7 +130,7 @@ export async function updatePlayerAction(
   const supabase = createServiceClient();
 
   const { error: nameErr } = await supabase
-    .from("players")
+    .from(TABLES.players)
     .update({ name })
     .eq("id", id);
   if (nameErr) {
@@ -159,7 +160,7 @@ export async function updatePlayerAction(
     // Bust CDN cache so the new image loads immediately.
     const url = `${pub.publicUrl}?v=${Date.now()}`;
     const { error: updErr } = await supabase
-      .from("players")
+      .from(TABLES.players)
       .update({ avatar_url: url })
       .eq("id", id);
     if (updErr) return { error: `Error al guardar la foto: ${updErr.message}` };
@@ -179,7 +180,7 @@ export async function removePlayerAction(formData: FormData) {
   if (!id) throw new Error("id requerido");
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from("players").delete().eq("id", id);
+  const { error } = await supabase.from(TABLES.players).delete().eq("id", id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/jugadores");

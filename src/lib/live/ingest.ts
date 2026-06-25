@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
@@ -81,7 +82,7 @@ async function applyFixture(
     live_updated_at: new Date().toISOString(),
   };
   await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .update(patch)
     .eq("match_number", match.match_number);
 
@@ -110,7 +111,7 @@ async function applyFixture(
       };
     });
     await supabase
-      .from("match_events")
+      .from(TABLES.matchEvents)
       .upsert(rows, { onConflict: "match_number,signature", ignoreDuplicates: true });
 
     // The API returns the full event list each poll, so prune any stored event
@@ -119,14 +120,14 @@ async function applyFixture(
     // linger as a duplicate) or drops a VAR-disallowed goal.
     const freshSigs = new Set(rows.map((r) => r.signature));
     const { data: stored } = await supabase
-      .from("match_events")
+      .from(TABLES.matchEvents)
       .select("id, signature")
       .eq("match_number", match.match_number);
     const staleIds = (stored ?? [])
       .filter((e) => !freshSigs.has(e.signature))
       .map((e) => e.id);
     if (staleIds.length > 0) {
-      await supabase.from("match_events").delete().in("id", staleIds);
+      await supabase.from(TABLES.matchEvents).delete().in("id", staleIds);
     }
   }
 }
@@ -138,7 +139,7 @@ export async function pollLive(): Promise<{
   const supabase = createServiceClient();
 
   const { data: matches } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select(
       "match_number, kickoff_at, api_fixture_id, api_home_is_a, live_status, completed_at",
     )

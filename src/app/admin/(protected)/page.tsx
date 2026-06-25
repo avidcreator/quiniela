@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -9,9 +10,9 @@ export default async function AdminHomePage() {
 
   const [matchesRes, playersRes] = await Promise.all([
     supabase
-      .from("matches")
+      .from(TABLES.matches)
       .select("match_number, actual_a", { count: "exact", head: false }),
-    supabase.from("players").select("id", { count: "exact", head: true }),
+    supabase.from(TABLES.players).select("id", { count: "exact", head: true }),
   ]);
 
   const totalMatches = matchesRes.data?.length ?? 0;

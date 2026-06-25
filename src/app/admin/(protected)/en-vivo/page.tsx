@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiConfigured } from "@/lib/live/api-football";
 import { getLiveEnabled } from "@/lib/settings";
@@ -12,7 +13,7 @@ export default async function EnVivoPage() {
   const liveEnabled = await getLiveEnabled();
   const supabase = createServiceClient();
   const { data: matches } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number, api_fixture_id, live_status")
     .order("match_number", { ascending: true });
 

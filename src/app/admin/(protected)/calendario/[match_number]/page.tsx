@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -19,7 +20,7 @@ export default async function EditMatchPage({
 
   const supabase = createServiceClient();
   const { data: match } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number, kickoff_at, team_a, team_b, group")
     .eq("match_number", num)
     .maybeSingle();

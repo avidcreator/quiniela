@@ -1,5 +1,6 @@
 "use server";
 
+import { TABLES } from "@/lib/supabase/tables";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/session";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -23,14 +24,14 @@ export async function autoMapAction() {
   const fixtures = await fetchSeasonFixtures();
   const supabase = createServiceClient();
   const { data: matches } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number, team_a, team_b, kickoff_at");
 
   for (const m of matches ?? []) {
     const s = suggestFixture(m, fixtures);
     if (s) {
       await supabase
-        .from("matches")
+        .from(TABLES.matches)
         .update({ api_fixture_id: s.fixtureId, api_home_is_a: s.homeIsA })
         .eq("match_number", m.match_number);
     }
