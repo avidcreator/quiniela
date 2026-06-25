@@ -6,7 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createPlayerAction } from "../actions";
 
-export function NewPlayerForm() {
+export function NewPlayerForm({
+  requireScorecard = true,
+}: {
+  requireScorecard?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(createPlayerAction, {});
 
   return (
@@ -22,10 +26,12 @@ export function NewPlayerForm() {
           Si no subes una foto, se usará un avatar con sus iniciales.
         </p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="file">Quiniela CSV</Label>
-        <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
-      </div>
+      {requireScorecard ? (
+        <div className="space-y-2">
+          <Label htmlFor="file">Quiniela CSV</Label>
+          <Input id="file" name="file" type="file" accept=".csv,text/csv" required />
+        </div>
+      ) : null}
       {state.error ? (
         <p className="text-sm text-destructive">{state.error}</p>
       ) : null}

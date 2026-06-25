@@ -1,4 +1,5 @@
-import { TABLES } from "@/lib/supabase/tables";
+import { getActivePhase, getTables } from "@/lib/phase";
+import { TOTAL_PHASE_TWO_MATCHES } from "@/lib/rounds";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -6,7 +7,10 @@ export const metadata = { title: "Admin · FIFA World Cup 2026" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
+  const phase = await getActivePhase();
   const supabase = createServiceClient();
+  const TABLES = await getTables();
+  const totalTarget = phase === "phase_two" ? TOTAL_PHASE_TWO_MATCHES : 72;
 
   const [matchesRes, playersRes] = await Promise.all([
     supabase
@@ -29,7 +33,7 @@ export default async function AdminHomePage() {
     {
       href: "/admin/calendario",
       title: "Calendario",
-      desc: `${totalMatches}/72 partidos cargados`,
+      desc: `${totalMatches}/${totalTarget} partidos cargados`,
       accent: "from-primary/15",
     },
     {

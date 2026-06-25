@@ -1,8 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PhaseSwitcher } from "@/components/phase-switcher";
+import { isAdmin } from "@/lib/admin/session";
+import { getActivePhase, getPublishedPhase } from "@/lib/phase";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const admin = await isAdmin();
+  const [current, published] = admin
+    ? await Promise.all([getActivePhase(), getPublishedPhase()])
+    : [null, null];
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4 sm:px-6">
@@ -22,7 +30,10 @@ export function SiteHeader() {
           </span>
           <span>FIFA World Cup 2026</span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="flex items-center gap-2 text-sm">
+          {admin && current && published ? (
+            <PhaseSwitcher current={current} published={published} />
+          ) : null}
           <ThemeToggle />
         </nav>
       </div>

@@ -1,4 +1,4 @@
-import { TABLES } from "@/lib/supabase/tables";
+import { getTables } from "@/lib/phase";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -16,6 +16,7 @@ export default async function EditPlayerPage({
   const { id } = await params;
 
   const supabase = createServiceClient();
+  const TABLES = await getTables();
   const { data: player } = await supabase
     .from(TABLES.players)
     .select("id, name, avatar_url")

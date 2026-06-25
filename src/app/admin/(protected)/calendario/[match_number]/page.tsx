@@ -1,7 +1,8 @@
-import { TABLES } from "@/lib/supabase/tables";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getActivePhase } from "@/lib/phase";
+import { isRoundKey, roundDef } from "@/lib/rounds";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,16 +19,30 @@ export default async function EditMatchPage({
   const num = Number(match_number);
   if (!Number.isInteger(num)) notFound();
 
+  const phase = await getActivePhase();
   const supabase = createServiceClient();
-  const { data: match } = await supabase
-    .from(TABLES.matches)
-    .select("match_number, kickoff_at, team_a, team_b, group")
-    .eq("match_number", num)
-    .maybeSingle();
+
+  // Phase 2 matches carry a `round` (no `group`); phase 1 the reverse.
+  const isTwo = phase === "phase_two";
+  const { data: match } = isTwo
+    ? await supabase
+        .from("phase_two_matches")
+        .select("match_number, kickoff_at, team_a, team_b, round")
+        .eq("match_number", num)
+        .maybeSingle()
+    : await supabase
+        .from("phase_one_matches")
+        .select("match_number, kickoff_at, team_a, team_b, group")
+        .eq("match_number", num)
+        .maybeSingle();
 
   if (!match) notFound();
 
   const kickoffLocal = toLocalInputValue(match.kickoff_at);
+  const roundLabel =
+    "round" in match && isRoundKey(match.round)
+      ? roundDef(match.round).label
+      : null;
 
   return (
     <div className="mx-auto max-w-xl">
@@ -40,6 +55,9 @@ export default async function EditMatchPage({
       <h1 className="mt-4 font-heading text-2xl font-bold tracking-tight">
         Editar partido #{match.match_number}
       </h1>
+      {roundLabel ? (
+        <p className="mt-1 text-sm text-muted-foreground">{roundLabel}</p>
+      ) : null}
 
       <form action={updateMatchAction} className="mt-6 space-y-5 rounded-2xl border bg-card p-6">
         <input type="hidden" name="match_number" value={match.match_number} />
@@ -53,17 +71,19 @@ export default async function EditMatchPage({
             <Input id="team_b" name="team_b" defaultValue={match.team_b} required />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="group">Grupo</Label>
-          <Input
-            id="group"
-            name="group"
-            defaultValue={match.group ?? ""}
-            maxLength={2}
-            placeholder="A"
-            className="w-20 uppercase"
-          />
-        </div>
+        {!isTwo ? (
+          <div className="space-y-2">
+            <Label htmlFor="group">Grupo</Label>
+            <Input
+              id="group"
+              name="group"
+              defaultValue={"group" in match ? match.group ?? "" : ""}
+              maxLength={2}
+              placeholder="A"
+              className="w-20 uppercase"
+            />
+          </div>
+        ) : null}
         <div className="space-y-2">
           <Label htmlFor="kickoff_at">Inicio</Label>
           <Input

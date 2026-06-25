@@ -1,6 +1,6 @@
 "use server";
 
-import { TABLES } from "@/lib/supabase/tables";
+import { getTables } from "@/lib/phase";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/session";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -23,6 +23,7 @@ export async function setScoreAction(formData: FormData) {
   }
 
   const supabase = createServiceClient();
+  const TABLES = await getTables();
   const { error } = await supabase
     .from(TABLES.matches)
     .update({
@@ -49,6 +50,7 @@ export async function setWinnersAction(formData: FormData) {
     .filter(Boolean);
 
   const supabase = createServiceClient();
+  const TABLES = await getTables();
 
   // Replace the whole winners set: clear, then insert.
   const { error: delErr } = await supabase
@@ -74,6 +76,7 @@ export async function clearScoreAction(formData: FormData) {
   if (!Number.isInteger(matchNumber)) throw new Error("match_number inválido");
 
   const supabase = createServiceClient();
+  const TABLES = await getTables();
   const { error } = await supabase
     .from(TABLES.matches)
     .update({ actual_a: null, actual_b: null, completed_at: null })

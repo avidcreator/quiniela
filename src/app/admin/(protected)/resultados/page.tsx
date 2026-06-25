@@ -1,4 +1,5 @@
-import { TABLES } from "@/lib/supabase/tables";
+import { getActivePhase, getTables } from "@/lib/phase";
+import { ROUNDS } from "@/lib/rounds";
 import { createServiceClient } from "@/lib/supabase/server";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
@@ -13,18 +14,25 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Resultados · Admin" };
 
 export default async function ResultadosPage() {
+  const phase = await getActivePhase();
+  const isTwo = phase === "phase_two";
   const supabase = createServiceClient();
-  const { data: matches } = await supabase
+  const TABLES = await getTables();
+  const columns = isTwo
+    ? "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, round"
+    : "match_number, kickoff_at, team_a, team_b, actual_a, actual_b";
+  const { data: matchesData } = await supabase
     .from(TABLES.matches)
-    .select("match_number, kickoff_at, team_a, team_b, actual_a, actual_b")
+    .select(columns)
     .order("kickoff_at", { ascending: true });
+  const matches = (matchesData ?? []) as unknown as Match[];
 
   const snap = await loadSnapshot();
   const leaderboard = computeLeaderboard(snap);
   const winnerSet = new Set(snap.winner_ids);
 
-  const pending = (matches ?? []).filter((m) => m.actual_a === null);
-  const completed = (matches ?? [])
+  const pending = matches.filter((m) => m.actual_a === null);
+  const completed = matches
     .filter((m) => m.actual_a !== null)
     .sort(
       (a, b) =>
@@ -94,11 +102,7 @@ export default async function ResultadosPage() {
           Pendientes ({pending.length})
         </h2>
         {pending.length > 0 ? (
-          <ul className="mt-4 space-y-3">
-            {pending.map((m) => (
-              <MatchRow key={m.match_number} match={m} completed={false} />
-            ))}
-          </ul>
+          <MatchListing matches={pending} completed={false} grouped={isTwo} />
         ) : (
           <p className="mt-4 rounded-2xl border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
             No hay partidos pendientes. Si aún no subes el calendario, hazlo
@@ -112,11 +116,7 @@ export default async function ResultadosPage() {
           Completados ({completed.length})
         </h2>
         {completed.length > 0 ? (
-          <ul className="mt-4 space-y-3">
-            {completed.map((m) => (
-              <MatchRow key={m.match_number} match={m} completed={true} />
-            ))}
-          </ul>
+          <MatchListing matches={completed} completed={true} grouped={isTwo} />
         ) : (
           <p className="mt-4 text-sm text-muted-foreground">
             Aún no hay marcadores ingresados.
@@ -134,7 +134,49 @@ type Match = {
   team_b: string;
   actual_a: number | null;
   actual_b: number | null;
+  round?: string | null;
 };
+
+/** Flat list in phase 1; grouped under round subheadings in phase 2. */
+function MatchListing({
+  matches,
+  completed,
+  grouped,
+}: {
+  matches: Match[];
+  completed: boolean;
+  grouped: boolean;
+}) {
+  if (!grouped) {
+    return (
+      <ul className="mt-4 space-y-3">
+        {matches.map((m) => (
+          <MatchRow key={m.match_number} match={m} completed={completed} />
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <div className="mt-4 space-y-6">
+      {ROUNDS.map((round) => {
+        const sub = matches.filter((m) => m.round === round.key);
+        if (sub.length === 0) return null;
+        return (
+          <div key={round.key} className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {round.label}
+            </h3>
+            <ul className="space-y-3">
+              {sub.map((m) => (
+                <MatchRow key={m.match_number} match={m} completed={completed} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function MatchRow({ match, completed }: { match: Match; completed: boolean }) {
   return (

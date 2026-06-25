@@ -32,119 +32,6 @@ export type Database = {
         }
         Relationships: []
       }
-      match_events: {
-        Row: {
-          assist: string | null
-          comments: string | null
-          created_at: string
-          detail: string | null
-          elapsed: number | null
-          elapsed_extra: number | null
-          id: string
-          match_number: number
-          player: string | null
-          side: string | null
-          signature: string
-          sort_index: number
-          type: string
-        }
-        Insert: {
-          assist?: string | null
-          comments?: string | null
-          created_at?: string
-          detail?: string | null
-          elapsed?: number | null
-          elapsed_extra?: number | null
-          id?: string
-          match_number: number
-          player?: string | null
-          side?: string | null
-          signature: string
-          sort_index?: number
-          type: string
-        }
-        Update: {
-          assist?: string | null
-          comments?: string | null
-          created_at?: string
-          detail?: string | null
-          elapsed?: number | null
-          elapsed_extra?: number | null
-          id?: string
-          match_number?: number
-          player?: string | null
-          side?: string | null
-          signature?: string
-          sort_index?: number
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_events_match_number_fkey"
-            columns: ["match_number"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["match_number"]
-          },
-        ]
-      }
-      matches: {
-        Row: {
-          actual_a: number | null
-          actual_b: number | null
-          api_fixture_id: number | null
-          api_home_is_a: boolean | null
-          completed_at: string | null
-          group: string | null
-          kickoff_at: string
-          live_away: number | null
-          live_elapsed: number | null
-          live_elapsed_extra: number | null
-          live_home: number | null
-          live_status: string | null
-          live_updated_at: string | null
-          match_number: number
-          team_a: string
-          team_b: string
-        }
-        Insert: {
-          actual_a?: number | null
-          actual_b?: number | null
-          api_fixture_id?: number | null
-          api_home_is_a?: boolean | null
-          completed_at?: string | null
-          group?: string | null
-          kickoff_at: string
-          live_away?: number | null
-          live_elapsed?: number | null
-          live_elapsed_extra?: number | null
-          live_home?: number | null
-          live_status?: string | null
-          live_updated_at?: string | null
-          match_number: number
-          team_a: string
-          team_b: string
-        }
-        Update: {
-          actual_a?: number | null
-          actual_b?: number | null
-          api_fixture_id?: number | null
-          api_home_is_a?: boolean | null
-          completed_at?: string | null
-          group?: string | null
-          kickoff_at?: string
-          live_away?: number | null
-          live_elapsed?: number | null
-          live_elapsed_extra?: number | null
-          live_home?: number | null
-          live_status?: string | null
-          live_updated_at?: string | null
-          match_number?: number
-          team_a?: string
-          team_b?: string
-        }
-        Relationships: []
-      }
       phase_one_match_events: {
         Row: {
           assist: string | null
@@ -338,7 +225,120 @@ export type Database = {
           },
         ]
       }
-      players: {
+      phase_two_match_events: {
+        Row: {
+          assist: string | null
+          comments: string | null
+          created_at: string
+          detail: string | null
+          elapsed: number | null
+          elapsed_extra: number | null
+          id: string
+          match_number: number
+          player: string | null
+          side: string | null
+          signature: string
+          sort_index: number
+          type: string
+        }
+        Insert: {
+          assist?: string | null
+          comments?: string | null
+          created_at?: string
+          detail?: string | null
+          elapsed?: number | null
+          elapsed_extra?: number | null
+          id?: string
+          match_number: number
+          player?: string | null
+          side?: string | null
+          signature: string
+          sort_index?: number
+          type: string
+        }
+        Update: {
+          assist?: string | null
+          comments?: string | null
+          created_at?: string
+          detail?: string | null
+          elapsed?: number | null
+          elapsed_extra?: number | null
+          id?: string
+          match_number?: number
+          player?: string | null
+          side?: string | null
+          signature?: string
+          sort_index?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_two_match_events_match_number_fkey"
+            columns: ["match_number"]
+            isOneToOne: false
+            referencedRelation: "phase_two_matches"
+            referencedColumns: ["match_number"]
+          },
+        ]
+      }
+      phase_two_matches: {
+        Row: {
+          actual_a: number | null
+          actual_b: number | null
+          api_fixture_id: number | null
+          api_home_is_a: boolean | null
+          completed_at: string | null
+          kickoff_at: string
+          live_away: number | null
+          live_elapsed: number | null
+          live_elapsed_extra: number | null
+          live_home: number | null
+          live_status: string | null
+          live_updated_at: string | null
+          match_number: number
+          round: string
+          team_a: string
+          team_b: string
+        }
+        Insert: {
+          actual_a?: number | null
+          actual_b?: number | null
+          api_fixture_id?: number | null
+          api_home_is_a?: boolean | null
+          completed_at?: string | null
+          kickoff_at: string
+          live_away?: number | null
+          live_elapsed?: number | null
+          live_elapsed_extra?: number | null
+          live_home?: number | null
+          live_status?: string | null
+          live_updated_at?: string | null
+          match_number: number
+          round: string
+          team_a: string
+          team_b: string
+        }
+        Update: {
+          actual_a?: number | null
+          actual_b?: number | null
+          api_fixture_id?: number | null
+          api_home_is_a?: boolean | null
+          completed_at?: string | null
+          kickoff_at?: string
+          live_away?: number | null
+          live_elapsed?: number | null
+          live_elapsed_extra?: number | null
+          live_home?: number | null
+          live_status?: string | null
+          live_updated_at?: string | null
+          match_number?: number
+          round?: string
+          team_a?: string
+          team_b?: string
+        }
+        Relationships: []
+      }
+      phase_two_players: {
         Row: {
           avatar_url: string | null
           created_at: string
@@ -359,7 +359,7 @@ export type Database = {
         }
         Relationships: []
       }
-      predictions: {
+      phase_two_predictions: {
         Row: {
           match_number: number
           player_id: string
@@ -380,22 +380,22 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "predictions_match_number_fkey"
+            foreignKeyName: "phase_two_predictions_match_number_fkey"
             columns: ["match_number"]
             isOneToOne: false
-            referencedRelation: "matches"
+            referencedRelation: "phase_two_matches"
             referencedColumns: ["match_number"]
           },
           {
-            foreignKeyName: "predictions_player_id_fkey"
+            foreignKeyName: "phase_two_predictions_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
-            referencedRelation: "players"
+            referencedRelation: "phase_two_players"
             referencedColumns: ["id"]
           },
         ]
       }
-      winners: {
+      phase_two_winners: {
         Row: {
           declared_at: string
           player_id: string
@@ -410,10 +410,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "winners_player_id_fkey"
+            foreignKeyName: "phase_two_winners_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: true
-            referencedRelation: "players"
+            referencedRelation: "phase_two_players"
             referencedColumns: ["id"]
           },
         ]
