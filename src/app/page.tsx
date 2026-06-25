@@ -39,6 +39,7 @@ import { Vibes } from "@/components/vibes";
 import { PointsRace } from "@/components/points-race";
 import { Countdown } from "@/components/countdown";
 import { InauguralMatchCard } from "@/components/inaugural-match-card";
+import { getActivePhase, PHASE_LABEL, PHASE_MATCH_COUNT } from "@/lib/phase";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,10 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const snap = await loadSnapshot();
   if (snap.matches.length === 0) return <EmptyHome />;
+
+  const phase = await getActivePhase();
+  const totalMatches = PHASE_MATCH_COUNT[phase];
+  const phaseLabel = PHASE_LABEL[phase];
 
   const now = Date.now();
 
@@ -71,7 +76,15 @@ export default async function Home() {
         })
     : [];
 
-  if (firstKickoffMs > now && !anyCompleted && liveMatches.length === 0) {
+  // The countdown / inaugural-day hype screen only makes sense for phase 1
+  // (before the tournament begins). Phase 2 starts mid-tournament, so it always
+  // goes straight to the regular dashboard.
+  if (
+    phase !== "phase_two" &&
+    firstKickoffMs > now &&
+    !anyCompleted &&
+    liveMatches.length === 0
+  ) {
     return <PreTournament snap={snap} firstKickoffMs={firstKickoffMs} />;
   }
 
@@ -209,6 +222,8 @@ export default async function Home() {
                 winners={allPlayers.filter((p) =>
                   snap.winner_ids.includes(p.entry.player_id),
                 )}
+                phaseLabel={phaseLabel}
+                totalMatches={totalMatches}
               />
             </section>
             <section className="mb-10">
@@ -230,7 +245,7 @@ export default async function Home() {
         {recent.length > 0 ? (
           <section>
             <SectionHeader
-              eyebrow={`Partido ${completedCount}/72`}
+              eyebrow={`Partido ${completedCount}/${totalMatches}`}
               title="Últimos resultados"
               action={
                 hasRecapToday ? (

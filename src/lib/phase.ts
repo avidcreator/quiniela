@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { isAdmin } from "@/lib/admin/session";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { TOTAL_PHASE_TWO_MATCHES } from "@/lib/rounds";
 
 /**
  * Phase switching.
@@ -31,6 +32,18 @@ export const PREVIEW_COOKIE = "qp_phase";
 export const ACTIVE_PHASE_KEY = "active_phase";
 /** Fallback when nothing is published yet. */
 export const DEFAULT_PHASE: Phase = "phase_one";
+
+/** Total matches in each phase (phase 1 = group stage, phase 2 = knockouts). */
+export const PHASE_MATCH_COUNT: Record<Phase, number> = {
+  phase_one: 72,
+  phase_two: TOTAL_PHASE_TWO_MATCHES,
+};
+
+/** Human label for each phase (Spanish), for headings/badges. */
+export const PHASE_LABEL: Record<Phase, string> = {
+  phase_one: "Fase de grupos",
+  phase_two: "Eliminatorias",
+};
 
 export type TableMap = {
   matches: "phase_one_matches" | "phase_two_matches";

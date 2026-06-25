@@ -26,7 +26,15 @@ export type WinnerMatch = {
 // WinnerCelebration — pure championship card (top section)
 // =========================================================
 
-export function WinnerCelebration({ winners }: { winners: WinnerData[] }) {
+export function WinnerCelebration({
+  winners,
+  phaseLabel,
+  totalMatches,
+}: {
+  winners: WinnerData[];
+  phaseLabel: string;
+  totalMatches: number;
+}) {
   if (winners.length === 0) return null;
   const multi = winners.length > 1;
 
@@ -47,7 +55,7 @@ export function WinnerCelebration({ winners }: { winners: WinnerData[] }) {
             />
           </span>
           <div className="font-heading text-[9px] font-black uppercase tracking-[0.28em] text-muted-foreground">
-            FIFA 2026 · Fase de grupos ·{" "}
+            FIFA 2026 · {phaseLabel} ·{" "}
             <span className="text-primary">
               {multi ? "Campeones" : "Campeón"}
             </span>
@@ -69,6 +77,7 @@ export function WinnerCelebration({ winners }: { winners: WinnerData[] }) {
             key={w.entry.player_id}
             data={w}
             shared={multi}
+            totalMatches={totalMatches}
           />
         ))}
       </div>
@@ -78,7 +87,7 @@ export function WinnerCelebration({ winners }: { winners: WinnerData[] }) {
           ★ Champion 2026
         </span>
         <span className="font-heading text-[10px] font-black uppercase tracking-[0.32em] text-primary-foreground">
-          Fase de grupos · 72 partidos
+          {phaseLabel} · {totalMatches} partidos
         </span>
       </div>
     </section>
@@ -88,9 +97,11 @@ export function WinnerCelebration({ winners }: { winners: WinnerData[] }) {
 function ChampionCard({
   data,
   shared,
+  totalMatches,
 }: {
   data: WinnerData;
   shared: boolean;
+  totalMatches: number;
 }) {
   const e = data.entry;
   const efectividad =
@@ -145,7 +156,7 @@ function ChampionCard({
               </span>
             </div>
             <span className="inline-flex items-center gap-1.5 border border-foreground/15 px-2 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
-              {e.matches_played}/72 jugados
+              {e.matches_played}/{totalMatches} jugados
             </span>
             <span className="inline-flex items-center gap-1.5 border border-foreground/15 px-2 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
               {efectividad}% efectividad
