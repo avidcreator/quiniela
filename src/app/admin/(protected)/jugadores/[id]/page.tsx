@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -16,7 +17,7 @@ export default async function EditPlayerPage({
 
   const supabase = createServiceClient();
   const { data: player } = await supabase
-    .from("players")
+    .from(TABLES.players)
     .select("id, name, avatar_url")
     .eq("id", id)
     .maybeSingle();

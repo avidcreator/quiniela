@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import "server-only";
 import { createClient } from "./supabase/server";
 import { pointsFor, type Points } from "./scoring";
@@ -132,7 +133,7 @@ async function loadAllPredictions(
   const all: Prediction[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
-      .from("predictions")
+      .from(TABLES.predictions)
       .select("player_id, match_number, pred_a, pred_b")
       .order("player_id", { ascending: true })
       .order("match_number", { ascending: true })
@@ -151,15 +152,15 @@ export async function loadSnapshot(): Promise<Snapshot> {
   const supabase = await createClient();
   const [matchesRes, playersRes, predictions, winnersRes] = await Promise.all([
     supabase
-      .from("matches")
+      .from(TABLES.matches)
       .select(MATCH_COLUMNS)
       .order("match_number", { ascending: true }),
     supabase
-      .from("players")
+      .from(TABLES.players)
       .select("id, name, avatar_url")
       .order("name", { ascending: true }),
     loadAllPredictions(supabase),
-    supabase.from("winners").select("player_id"),
+    supabase.from(TABLES.winners).select("player_id"),
   ]);
 
   return {
@@ -177,7 +178,7 @@ export async function loadMatchEvents(
   if (matchNumbers.length === 0) return [];
   const supabase = await createClient();
   const { data } = await supabase
-    .from("match_events")
+    .from(TABLES.matchEvents)
     .select(
       "id, match_number, sort_index, elapsed, elapsed_extra, type, detail, side, player, assist, comments",
     )

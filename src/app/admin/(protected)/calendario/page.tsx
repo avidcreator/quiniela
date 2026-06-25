@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import { KickoffDate } from "@/components/kickoff-date";
@@ -9,7 +10,7 @@ export const metadata = { title: "Calendario · Admin" };
 export default async function CalendarioPage() {
   const supabase = createServiceClient();
   const { data: matches } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number, kickoff_at, team_a, team_b")
     .order("match_number", { ascending: true });
 

@@ -1,3 +1,4 @@
+import { TABLES } from "@/lib/supabase/tables";
 import { createServiceClient } from "@/lib/supabase/server";
 import { loadSnapshot } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
@@ -14,7 +15,7 @@ export const metadata = { title: "Resultados · Admin" };
 export default async function ResultadosPage() {
   const supabase = createServiceClient();
   const { data: matches } = await supabase
-    .from("matches")
+    .from(TABLES.matches)
     .select("match_number, kickoff_at, team_a, team_b, actual_a, actual_b")
     .order("kickoff_at", { ascending: true });
 
