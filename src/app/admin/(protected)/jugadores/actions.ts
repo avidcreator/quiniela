@@ -191,13 +191,20 @@ export async function uploadRoundScorecardAction(
 
   const supabase = createServiceClient();
 
-  // The round's matches must exist (FK target + correct global slots).
-  const { count } = await supabase
+  // Each predicted match must already be on the schedule. Rounds load in waves,
+  // so we check the specific matches in the file rather than the whole round.
+  const { data: scheduled } = await supabase
     .from("phase_two_matches")
-    .select("match_number", { count: "exact", head: true })
+    .select("match_number")
     .eq("round", round.key);
-  if ((count ?? 0) !== round.count) {
-    return { error: `Sube primero el calendario de ${round.label}.` };
+  const scheduledSet = new Set((scheduled ?? []).map((m) => m.match_number));
+  const missing = parsed.rows
+    .map((r) => r.match_number)
+    .filter((n) => !scheduledSet.has(n));
+  if (missing.length > 0) {
+    return {
+      error: `Estos partidos aún no están en el calendario: ${missing.join(", ")}. Súbelos primero en Calendario.`,
+    };
   }
 
   const rows = parsed.rows.map((r) => ({

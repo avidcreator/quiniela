@@ -47,11 +47,10 @@ export function parseRoundScorecardCsv(
   }
 
   const data = parsed.data;
-  if (data.length !== round.count) {
-    return {
-      ok: false,
-      error: `${round.label}: se esperan ${round.count} fila${round.count === 1 ? "" : "s"}, llegaron ${data.length}.`,
-    };
+  // Scorecards can be submitted in waves (e.g. just the first match now, the
+  // rest of the round later), so any non-empty subset is allowed.
+  if (data.length === 0) {
+    return { ok: false, error: `${round.label}: sube al menos un partido.` };
   }
 
   const first = roundFirst(round);

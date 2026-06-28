@@ -104,8 +104,8 @@ export default async function PlayersPage() {
     supabase.from("phase_two_predictions").select("player_id, match_number"),
   ]);
 
-  // How many matches are loaded per round (a round is uploadable once its
-  // schedule is complete).
+  // How many matches are currently on the schedule per round. Rounds can be
+  // loaded in waves, so this may be less than the round's full size.
   const matchesPerRound = new Map<string, number>();
   for (const m of matchesRes.data ?? []) {
     matchesPerRound.set(m.round, (matchesPerRound.get(m.round) ?? 0) + 1);
@@ -122,16 +122,17 @@ export default async function PlayersPage() {
     set.add(p.match_number);
   }
 
-  function loadedForRound(
+  // How many of a round's matches this player has predicted so far.
+  function predictedForRound(
     playerId: string,
     base: number,
     count: number,
-  ): boolean {
+  ): number {
     const set = predsByPlayer.get(playerId);
-    if (!set) return false;
+    if (!set) return 0;
     let n = 0;
     for (let i = base + 1; i <= base + count; i++) if (set.has(i)) n++;
-    return n === count;
+    return n;
   }
 
   return (
@@ -144,8 +145,9 @@ export default async function PlayersPage() {
           Quinielas por ronda
         </h2>
         <p className="text-sm text-muted-foreground">
-          Sube la quiniela de cada jugador conforme se juega cada ronda. CSV con
-          columnas{" "}
+          Sube la quiniela de cada jugador conforme se juega cada ronda. Puedes
+          subir solo los partidos que ya tengas y completar el resto después. CSV
+          con columnas{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-xs">
             match_number, date, team_a, team_b, predicted_team_a, predicted_team_b
           </code>{" "}
@@ -155,19 +157,19 @@ export default async function PlayersPage() {
       </section>
 
       {ROUNDS.map((round) => {
-        const scheduleLoaded = (matchesPerRound.get(round.key) ?? 0) === round.count;
+        const scheduledCount = matchesPerRound.get(round.key) ?? 0;
         return (
           <section key={round.key} className="rounded-2xl border bg-card p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-heading text-lg font-semibold">{round.label}</h3>
-              {!scheduleLoaded ? (
-                <span className="text-sm text-muted-foreground">
-                  Calendario pendiente
-                </span>
-              ) : null}
+              <span className="text-sm text-muted-foreground">
+                {scheduledCount === 0
+                  ? "Calendario pendiente"
+                  : `${scheduledCount}/${round.count} partidos en calendario`}
+              </span>
             </div>
 
-            {!scheduleLoaded ? (
+            {scheduledCount === 0 ? (
               <p className="mt-3 rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
                 Sube primero el calendario de esta ronda en la pestaña Calendario.
               </p>
@@ -189,7 +191,8 @@ export default async function PlayersPage() {
                     <RoundScorecardControl
                       playerId={p.id}
                       round={round.key}
-                      loaded={loadedForRound(p.id, round.base, round.count)}
+                      predicted={predictedForRound(p.id, round.base, round.count)}
+                      scheduled={scheduledCount}
                     />
                   </li>
                 ))}

@@ -5,6 +5,8 @@ import { ROUNDS } from "@/lib/rounds";
 import { KickoffDate } from "@/components/kickoff-date";
 import { ScheduleUploadForm } from "./upload-form";
 import { RoundUploadForm } from "./round-upload-form";
+import { RoundClearButton } from "./round-clear-button";
+import { removeRoundMatchesAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Calendario · Admin" };
@@ -69,8 +71,8 @@ export default async function CalendarioPage() {
             Calendario
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Sube cada ronda por separado en CSV. Cada ronda se carga cuando ya
-            se conocen sus partidos. Columnas:{" "}
+            Sube cada ronda por separado en CSV. Puedes subir solo los partidos
+            que ya se conozcan y completar el resto después. Columnas:{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">
               match_number, date, team_a, team_b
             </code>{" "}
@@ -83,13 +85,24 @@ export default async function CalendarioPage() {
           const roundMatches = all.filter((m) => m.round === round.key);
           return (
             <section key={round.key} className="rounded-2xl border bg-card p-6">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-heading text-lg font-semibold">
                   {round.label}
                 </h2>
-                <span className="text-sm text-muted-foreground">
-                  {roundMatches.length}/{round.count} cargados
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {roundMatches.length}/{round.count} cargados
+                  </span>
+                  {roundMatches.length > 0 ? (
+                    <form action={removeRoundMatchesAction}>
+                      <input type="hidden" name="round" value={round.key} />
+                      <RoundClearButton
+                        label={round.label}
+                        count={roundMatches.length}
+                      />
+                    </form>
+                  ) : null}
+                </div>
               </div>
               <RoundUploadForm round={round.key} count={round.count} />
               {roundMatches.length > 0 ? (

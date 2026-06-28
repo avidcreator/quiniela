@@ -39,11 +39,10 @@ export function parseRoundScheduleCsv(
   }
 
   const data = parsed.data;
-  if (data.length !== round.count) {
-    return {
-      ok: false,
-      error: `${round.label}: se esperan ${round.count} fila${round.count === 1 ? "" : "s"}, llegaron ${data.length}.`,
-    };
+  // A round can be uploaded in waves (its matchups become known over time), so
+  // any non-empty subset up to the round size is allowed.
+  if (data.length === 0) {
+    return { ok: false, error: `${round.label}: sube al menos un partido.` };
   }
 
   const first = roundFirst(round);

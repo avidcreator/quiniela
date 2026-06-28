@@ -76,6 +76,35 @@ export async function uploadRoundScheduleAction(
   return { ok: `${round.label}: se cargaron ${parsed.rows.length} partidos.` };
 }
 
+/** Phase 2: clear every uploaded match (and any scorecards) for one round. */
+export async function removeRoundMatchesAction(formData: FormData) {
+  await requireAdmin();
+
+  const roundKey = String(formData.get("round") ?? "");
+  if (!isRoundKey(roundKey)) throw new Error("Ronda inválida");
+  const round = roundDef(roundKey);
+
+  const supabase = createServiceClient();
+  // Predictions reference matches with ON DELETE RESTRICT, so remove the round's
+  // predictions (its scorecards) first, then its matches (events cascade).
+  const { error: predErr } = await supabase
+    .from("phase_two_predictions")
+    .delete()
+    .gte("match_number", round.base + 1)
+    .lte("match_number", round.base + round.count);
+  if (predErr) throw new Error(predErr.message);
+
+  const { error: matchErr } = await supabase
+    .from("phase_two_matches")
+    .delete()
+    .eq("round", round.key);
+  if (matchErr) throw new Error(matchErr.message);
+
+  revalidatePath("/admin/calendario");
+  revalidatePath("/admin/jugadores");
+  revalidatePath("/admin");
+}
+
 export async function updateMatchAction(formData: FormData) {
   await requireAdmin();
 
