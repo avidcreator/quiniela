@@ -1,5 +1,5 @@
-import { TABLES } from "@/lib/supabase/tables";
 import "server-only";
+import { getPublishedPhase, tablesForPhase, type TableMap } from "@/lib/phase";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   fetchLiveFixtures,
@@ -56,6 +56,7 @@ function needsPolling(m: MappedMatch, now: number): boolean {
 
 async function applyFixture(
   supabase: ServiceClient,
+  tables: TableMap,
   match: MappedMatch,
   fx: ApiFixture,
   events: ApiEvent[],
@@ -82,7 +83,7 @@ async function applyFixture(
     live_updated_at: new Date().toISOString(),
   };
   await supabase
-    .from(TABLES.matches)
+    .from(tables.matches)
     .update(patch)
     .eq("match_number", match.match_number);
 
@@ -111,7 +112,7 @@ async function applyFixture(
       };
     });
     await supabase
-      .from(TABLES.matchEvents)
+      .from(tables.matchEvents)
       .upsert(rows, { onConflict: "match_number,signature", ignoreDuplicates: true });
 
     // The API returns the full event list each poll, so prune any stored event
@@ -120,14 +121,14 @@ async function applyFixture(
     // linger as a duplicate) or drops a VAR-disallowed goal.
     const freshSigs = new Set(rows.map((r) => r.signature));
     const { data: stored } = await supabase
-      .from(TABLES.matchEvents)
+      .from(tables.matchEvents)
       .select("id, signature")
       .eq("match_number", match.match_number);
     const staleIds = (stored ?? [])
       .filter((e) => !freshSigs.has(e.signature))
       .map((e) => e.id);
     if (staleIds.length > 0) {
-      await supabase.from(TABLES.matchEvents).delete().in("id", staleIds);
+      await supabase.from(tables.matchEvents).delete().in("id", staleIds);
     }
   }
 }
@@ -137,9 +138,12 @@ export async function pollLive(): Promise<{
   skipped?: string;
 }> {
   const supabase = createServiceClient();
+  // The cron has no request cookie, so it always polls the publicly-published
+  // phase — the one with matches that could actually be live right now.
+  const tables = tablesForPhase(await getPublishedPhase());
 
   const { data: matches } = await supabase
-    .from(TABLES.matches)
+    .from(tables.matches)
     .select(
       "match_number, kickoff_at, api_fixture_id, api_home_is_a, live_status, completed_at",
     )
@@ -163,14 +167,14 @@ export async function pollLive(): Promise<{
     const fx = liveById.get(m.api_fixture_id);
     if (fx) {
       const events = await fetchFixtureEvents(m.api_fixture_id);
-      await applyFixture(supabase, m, fx, events);
+      await applyFixture(supabase, tables, m, fx, events);
       updated++;
     } else if (m.live_status && LIVE_STATUSES.has(m.live_status)) {
       // Was live last poll but no longer in the live list → finalize it.
       const single = await fetchFixture(m.api_fixture_id);
       if (single) {
         const events = await fetchFixtureEvents(m.api_fixture_id);
-        await applyFixture(supabase, m, single, events);
+        await applyFixture(supabase, tables, m, single, events);
         updated++;
       }
     }

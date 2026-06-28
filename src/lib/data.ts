@@ -1,5 +1,5 @@
-import { TABLES } from "@/lib/supabase/tables";
 import "server-only";
+import { getActivePhase, getTables, tablesForPhase, type Phase, type TableMap } from "@/lib/phase";
 import { createClient } from "./supabase/server";
 import { pointsFor, type Points } from "./scoring";
 
@@ -8,7 +8,10 @@ export type Match = {
   kickoff_at: string;
   team_a: string;
   team_b: string;
+  /** Group stage label (phase 1 only). */
   group: string | null;
+  /** Knockout round label: R32 | R16 | QF | SF | 3RD | FINAL (phase 2 only). */
+  round: string | null;
   actual_a: number | null;
   actual_b: number | null;
   completed_at: string | null;
@@ -129,11 +132,12 @@ const PAGE_SIZE = 1000;
 
 async function loadAllPredictions(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  predictionsTable: TableMap["predictions"],
 ): Promise<Prediction[]> {
   const all: Prediction[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await supabase
-      .from(TABLES.predictions)
+      .from(predictionsTable)
       .select("player_id, match_number, pred_a, pred_b")
       .order("player_id", { ascending: true })
       .order("match_number", { ascending: true })
@@ -145,26 +149,41 @@ async function loadAllPredictions(
   return all;
 }
 
-const MATCH_COLUMNS =
-  "match_number, kickoff_at, team_a, team_b, group, actual_a, actual_b, completed_at, api_fixture_id, api_home_is_a, live_status, live_elapsed, live_elapsed_extra, live_home, live_away, live_updated_at";
+const COMMON_MATCH_COLUMNS =
+  "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, completed_at, api_fixture_id, api_home_is_a, live_status, live_elapsed, live_elapsed_extra, live_home, live_away, live_updated_at";
+
+/**
+ * Match columns differ by phase: phase 1 matches carry a `group`, phase 2
+ * matches carry a `round`. Selecting a column the table doesn't have errors,
+ * so the list is phase-aware.
+ */
+function matchColumns(phase: Phase): string {
+  return phase === "phase_two"
+    ? `${COMMON_MATCH_COLUMNS}, round`
+    : `${COMMON_MATCH_COLUMNS}, group`;
+}
 
 export async function loadSnapshot(): Promise<Snapshot> {
   const supabase = await createClient();
+  const phase = await getActivePhase();
+  const TABLES = tablesForPhase(phase);
   const [matchesRes, playersRes, predictions, winnersRes] = await Promise.all([
     supabase
       .from(TABLES.matches)
-      .select(MATCH_COLUMNS)
+      .select(matchColumns(phase))
       .order("match_number", { ascending: true }),
     supabase
       .from(TABLES.players)
       .select("id, name, avatar_url")
       .order("name", { ascending: true }),
-    loadAllPredictions(supabase),
+    loadAllPredictions(supabase, TABLES.predictions),
     supabase.from(TABLES.winners).select("player_id"),
   ]);
 
   return {
-    matches: matchesRes.data ?? [],
+    // `matchColumns()` is resolved at runtime (phase-dependent), so the select
+    // result isn't statically typed — the row shape is known to be Match.
+    matches: (matchesRes.data ?? []) as unknown as Match[],
     players: playersRes.data ?? [],
     predictions,
     winner_ids: (winnersRes.data ?? []).map((w) => w.player_id),
@@ -177,6 +196,7 @@ export async function loadMatchEvents(
 ): Promise<MatchEvent[]> {
   if (matchNumbers.length === 0) return [];
   const supabase = await createClient();
+  const TABLES = await getTables();
   const { data } = await supabase
     .from(TABLES.matchEvents)
     .select(

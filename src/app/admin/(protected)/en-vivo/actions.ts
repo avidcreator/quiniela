@@ -1,6 +1,6 @@
 "use server";
 
-import { TABLES } from "@/lib/supabase/tables";
+import { getTables } from "@/lib/phase";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/session";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -23,6 +23,7 @@ export async function autoMapAction() {
 
   const fixtures = await fetchSeasonFixtures();
   const supabase = createServiceClient();
+  const TABLES = await getTables();
   const { data: matches } = await supabase
     .from(TABLES.matches)
     .select("match_number, team_a, team_b, kickoff_at");

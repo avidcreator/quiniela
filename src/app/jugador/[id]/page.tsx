@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadSnapshot, isCompleted } from "@/lib/data";
+import { getActivePhase, PHASE_MATCH_COUNT } from "@/lib/phase";
 import { computeLeaderboard, computePlayerStats } from "@/lib/stats";
 import { pointsFor } from "@/lib/scoring";
 import { Avatar } from "@/components/avatar";
@@ -34,6 +35,8 @@ export default async function JugadorPage({
   const stats = computePlayerStats(snap, id);
   const rank = computeLeaderboard(snap).find((e) => e.player_id === id)?.rank;
   if (!stats) notFound();
+
+  const totalMatches = PHASE_MATCH_COUNT[await getActivePhase()];
 
   const losses = Math.max(0, stats.matches_played - stats.wins);
   const podiumRing =
@@ -98,7 +101,7 @@ export default async function JugadorPage({
         <Stat
           label="Jugados"
           value={`${stats.matches_played}`}
-          sub={`de 72`}
+          sub={`de ${totalMatches}`}
           tone="muted"
         />
       </section>
