@@ -1,5 +1,5 @@
 import "server-only";
-import { getPublishedPhase, tablesForPhase, type TableMap } from "@/lib/phase";
+import { PHASES, tablesForPhase, type TableMap } from "@/lib/phase";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   fetchLiveFixtures,
@@ -138,44 +138,49 @@ export async function pollLive(): Promise<{
   skipped?: string;
 }> {
   const supabase = createServiceClient();
-  // The cron has no request cookie, so it always polls the publicly-published
-  // phase — the one with matches that could actually be live right now.
-  const tables = tablesForPhase(await getPublishedPhase());
-
-  const { data: matches } = await supabase
-    .from(tables.matches)
-    .select(
-      "match_number, kickoff_at, api_fixture_id, api_home_is_a, live_status, completed_at",
-    )
-    .not("api_fixture_id", "is", null);
-
-  if (!matches || matches.length === 0) return { updated: 0 };
-
-  // Only touch the API when at least one match could be in progress right now.
-  // Outside any match window the cron is a no-op (no external request), which
-  // keeps us from burning quota 24/7.
   const now = Date.now();
-  const active = (matches as MappedMatch[]).filter((m) => needsPolling(m, now));
-  if (active.length === 0) return { updated: 0, skipped: "no match in window" };
+
+  // Poll EVERY phase that has a mapped match in its window, so live data flows
+  // to whichever phase the live matches belong to — independent of which phase
+  // is currently published. A finished phase is a cheap no-op (DB read only, no
+  // match in window → no external request), so quota is unaffected.
+  const pending: { tables: TableMap; active: MappedMatch[] }[] = [];
+  for (const phase of PHASES) {
+    const tables = tablesForPhase(phase);
+    const { data } = await supabase
+      .from(tables.matches)
+      .select(
+        "match_number, kickoff_at, api_fixture_id, api_home_is_a, live_status, completed_at",
+      )
+      .not("api_fixture_id", "is", null);
+    const active = ((data ?? []) as MappedMatch[]).filter((m) =>
+      needsPolling(m, now),
+    );
+    if (active.length > 0) pending.push({ tables, active });
+  }
+
+  if (pending.length === 0) return { updated: 0, skipped: "no match in window" };
 
   const live = await fetchLiveFixtures();
   const liveById = new Map(live.map((f) => [f.fixture.id, f]));
 
   let updated = 0;
-  for (const m of active) {
-    if (m.api_fixture_id == null) continue;
-    const fx = liveById.get(m.api_fixture_id);
-    if (fx) {
-      const events = await fetchFixtureEvents(m.api_fixture_id);
-      await applyFixture(supabase, tables, m, fx, events);
-      updated++;
-    } else if (m.live_status && LIVE_STATUSES.has(m.live_status)) {
-      // Was live last poll but no longer in the live list → finalize it.
-      const single = await fetchFixture(m.api_fixture_id);
-      if (single) {
+  for (const { tables, active } of pending) {
+    for (const m of active) {
+      if (m.api_fixture_id == null) continue;
+      const fx = liveById.get(m.api_fixture_id);
+      if (fx) {
         const events = await fetchFixtureEvents(m.api_fixture_id);
-        await applyFixture(supabase, tables, m, single, events);
+        await applyFixture(supabase, tables, m, fx, events);
         updated++;
+      } else if (m.live_status && LIVE_STATUSES.has(m.live_status)) {
+        // Was live last poll but no longer in the live list → finalize it.
+        const single = await fetchFixture(m.api_fixture_id);
+        if (single) {
+          const events = await fetchFixtureEvents(m.api_fixture_id);
+          await applyFixture(supabase, tables, m, single, events);
+          updated++;
+        }
       }
     }
   }

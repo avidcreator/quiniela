@@ -33,7 +33,14 @@ export async function autoMapAction() {
     if (s) {
       await supabase
         .from(TABLES.matches)
-        .update({ api_fixture_id: s.fixtureId, api_home_is_a: s.homeIsA })
+        .update({
+          api_fixture_id: s.fixtureId,
+          api_home_is_a: s.homeIsA,
+          // Sync the kickoff from the API's authoritative fixture time. This
+          // also repairs dates entered without a timezone (which land at UTC
+          // midnight and would misalign the cron's polling window).
+          kickoff_at: s.date,
+        })
         .eq("match_number", m.match_number);
     }
   }
