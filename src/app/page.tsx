@@ -112,13 +112,15 @@ export default async function Home() {
       (a, b) =>
         new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime(),
     );
-  // Show every match on the same calendar day as the next upcoming one.
+  // Show the next 4 upcoming matches regardless of day — but if the next
+  // match's day has more than 4, show that whole day so it isn't cut off.
   const upcomingDayKey = upcomingAll[0]
     ? matchDateKey(upcomingAll[0].kickoff_at)
     : null;
-  const upcoming = upcomingAll.filter(
+  const firstDayCount = upcomingAll.filter(
     (m) => matchDateKey(m.kickoff_at) === upcomingDayKey,
-  );
+  ).length;
+  const upcoming = upcomingAll.slice(0, Math.max(4, firstDayCount));
 
   const completedAsc = snap.matches.filter(isCompleted).sort((a, b) => {
     const at = new Date(a.completed_at ?? a.kickoff_at).getTime();
