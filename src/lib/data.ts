@@ -110,6 +110,40 @@ export function liveScore(
     : { a: m.live_away, b: m.live_home };
 }
 
+// Live statuses that mean a knockout match has gone PAST regulation: extra time
+// (incl. its break), or penalties. In these, the running total includes goals
+// that don't count toward points — only the 90' (incl. stoppage) score does.
+const EXTRA_TIME_STATUSES = new Set(["ET", "BT", "P", "AET", "PEN"]);
+
+export function isExtraTimePhase(status: string | null): boolean {
+  return status != null && EXTRA_TIME_STATUSES.has(status);
+}
+
+/**
+ * Reconstruct the regulation score (90' + stoppage) from the event feed, for
+ * phase 2 knockout matches. Counts goals at `elapsed <= 90` (stoppage time is
+ * recorded as elapsed 45/90 with an `extra` value, so it's included); excludes
+ * extra-time goals (elapsed > 90), the penalty shootout, and missed/saved
+ * penalties. Own goals are credited to the other side.
+ */
+export function regulationGoals(events: MatchEvent[]): { a: number; b: number } {
+  let a = 0;
+  let b = 0;
+  for (const e of events) {
+    if (e.type.toLowerCase() !== "goal") continue;
+    const detail = (e.detail ?? "").toLowerCase();
+    const comments = (e.comments ?? "").toLowerCase();
+    if (comments.includes("penalty shootout")) continue; // shootout kick
+    if (detail.includes("missed") || detail.includes("saved")) continue; // no goal
+    if (e.elapsed == null || e.elapsed > 90) continue; // extra time / unknown
+    const own = detail.includes("own");
+    const side = own ? (e.side === "a" ? "b" : e.side === "b" ? "a" : null) : e.side;
+    if (side === "a") a++;
+    else if (side === "b") b++;
+  }
+  return { a, b };
+}
+
 export type Player = { id: string; name: string; avatar_url: string | null };
 
 export type Prediction = {

@@ -5,7 +5,9 @@ import {
   isCompleted,
   isLive,
   isLiveVisible,
+  isExtraTimePhase,
   liveScore,
+  regulationGoals,
 } from "@/lib/data";
 import {
   computeLeaderboard,
@@ -95,14 +97,29 @@ export default async function Home() {
     liveMatches.length > 0
       ? await loadMatchEvents(liveMatches.map((m) => m.match_number))
       : [];
+  const knockout = phase === "phase_two";
   const liveBlocks = liveMatches.map((m) => {
-    const sc = liveScore(m) ?? { a: 0, b: 0 };
+    const total = liveScore(m) ?? { a: 0, b: 0 };
+    const events = liveEvents.filter((e) => e.match_number === m.match_number);
+    // For knockouts, the score that awards points is the 90' (regulation)
+    // result. While still in regulation the running total IS that; once in extra
+    // time / penalties, freeze the regulation score from the (settled) feed.
+    const reg =
+      knockout && isExtraTimePhase(m.live_status)
+        ? regulationGoals(events)
+        : total;
+    // Never let the regulation score exceed the running total (feed safety).
+    const scoreA = Math.min(reg.a, total.a);
+    const scoreB = Math.min(reg.b, total.b);
     return {
       match: m,
-      scoreA: sc.a,
-      scoreB: sc.b,
-      events: liveEvents.filter((e) => e.match_number === m.match_number),
-      forecast: forecastStandings(snap, m.match_number, sc.a, sc.b),
+      scoreA,
+      scoreB,
+      totalA: total.a,
+      totalB: total.b,
+      knockout,
+      events,
+      forecast: forecastStandings(snap, m.match_number, scoreA, scoreB),
     };
   });
 
@@ -209,6 +226,9 @@ export default async function Home() {
                   match={b.match}
                   scoreA={b.scoreA}
                   scoreB={b.scoreB}
+                  totalA={b.totalA}
+                  totalB={b.totalB}
+                  knockout={b.knockout}
                   events={b.events}
                   forecast={b.forecast}
                 />

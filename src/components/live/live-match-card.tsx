@@ -2,19 +2,32 @@ import Link from "next/link";
 import { TeamFlag } from "../team-flag";
 import { Avatar } from "../avatar";
 import { LiveMinute } from "./live-minute";
-import { isLiveFinal, type Match, type MatchEvent } from "@/lib/data";
+import {
+  isExtraTimePhase,
+  isLiveFinal,
+  type Match,
+  type MatchEvent,
+} from "@/lib/data";
 import type { ForecastEntry } from "@/lib/stats";
 
 export function LiveMatchCard({
   match,
   scoreA,
   scoreB,
+  totalA,
+  totalB,
+  knockout = false,
   events,
   forecast,
 }: {
   match: Match;
+  /** The score that counts. For knockouts this is the 90' (regulation) score. */
   scoreA: number;
   scoreB: number;
+  /** Running total incl. extra time (knockouts). Defaults to the counting score. */
+  totalA?: number;
+  totalB?: number;
+  knockout?: boolean;
   events: MatchEvent[];
   forecast: ForecastEntry[];
 }) {
@@ -35,6 +48,18 @@ export function LiveMatchCard({
       : match.live_status === "AET"
         ? "Tiempo extra"
         : "Concluido";
+
+  // Knockout, past 90': the big score is the regulation result (it counts); the
+  // running total and any extra-time/penalty developments are shown but tagged
+  // as not counting toward points.
+  const gTotalA = totalA ?? scoreA;
+  const gTotalB = totalB ?? scoreB;
+  const inExtra = knockout && isExtraTimePhase(match.live_status);
+  const extraTag =
+    match.live_status === "P" || match.live_status === "PEN"
+      ? "Penales"
+      : "Tiempo extra";
+  const globalDiffers = gTotalA !== scoreA || gTotalB !== scoreB;
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
@@ -57,6 +82,12 @@ export function LiveMatchCard({
                   event={e}
                   teamA={match.team_a}
                   teamB={match.team_b}
+                  noCount={
+                    knockout &&
+                    e.type.toLowerCase() === "goal" &&
+                    e.elapsed != null &&
+                    e.elapsed > 90
+                  }
                 />
               ))}
             </ul>
@@ -125,20 +156,32 @@ export function LiveMatchCard({
               <div className="flex flex-col items-center">
                 <div
                   className={`flex items-baseline gap-2 font-heading text-5xl font-extrabold tabular-nums sm:text-7xl ${
-                    isFinal ? "" : "animate-live"
+                    isFinal || inExtra ? "" : "animate-live"
                   }`}
                 >
                   <span>{scoreA}</span>
                   <span className="text-muted-foreground/70">-</span>
                   <span>{scoreB}</span>
                 </div>
-                <span
-                  className={`mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] ${
-                    isFinal ? "text-muted-foreground" : "text-primary"
-                  }`}
-                >
-                  {isFinal ? finalLabel : isPaused ? "En pausa" : "En juego"}
-                </span>
+                {inExtra ? (
+                  <div className="mt-1 flex flex-col items-center gap-0.5 text-center">
+                    <span className="font-heading text-[9px] font-black uppercase tracking-[0.24em] text-primary">
+                      Cuenta para puntos
+                    </span>
+                    <span className="font-heading text-[8px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      {globalDiffers ? `Global ${gTotalA}–${gTotalB} · ` : ""}
+                      {extraTag} · no cuenta
+                    </span>
+                  </div>
+                ) : (
+                  <span
+                    className={`mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] ${
+                      isFinal ? "text-muted-foreground" : "text-primary"
+                    }`}
+                  >
+                    {isFinal ? finalLabel : isPaused ? "En pausa" : "En juego"}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col items-center gap-2 text-center">
                 <TeamFlag team={match.team_b} size="lg" />
@@ -152,7 +195,7 @@ export function LiveMatchCard({
           {pk.length > 0 ? (
             <div className="border-t-2 border-primary/15 px-4 py-2">
               <div className="text-center font-heading text-[8px] font-black uppercase tracking-[0.24em] text-primary">
-                Tanda de penales
+                Tanda de penales{knockout ? " · no cuenta" : ""}
               </div>
               <div className="mt-1.5 space-y-1.5">
                 <PkRow team={match.team_a} kicks={pkA} slots={pkSlots} />
@@ -287,14 +330,18 @@ function EventPill({
   event,
   teamA,
   teamB,
+  noCount = false,
 }: {
   event: MatchEvent;
   teamA: string;
   teamB: string;
+  noCount?: boolean;
 }) {
   const team = event.side === "a" ? teamA : event.side === "b" ? teamB : null;
   const { icon, accent } = eventIcon(event);
-  const isGoal = event.type.toLowerCase() === "goal";
+  // A post-90' (extra-time) knockout goal is shown, but it doesn't count toward
+  // points, so it's rendered muted rather than with the prominent goal styling.
+  const isGoal = event.type.toLowerCase() === "goal" && !noCount;
   // API-Football substitutions: `player` is who came OFF, `assist` who came ON.
   const isSub = event.type.toLowerCase() === "subst";
   const minute =
@@ -341,10 +388,17 @@ function EventPill({
         </span>
         <span className="min-w-0 truncate">
           <span
-            className={`font-heading text-[11px] font-black uppercase tracking-wide ${accent}`}
+            className={`font-heading text-[11px] font-black uppercase tracking-wide ${
+              noCount ? "text-muted-foreground" : accent
+            }`}
           >
             {eventTitle(event)}
           </span>
+          {noCount ? (
+            <span className="ml-1.5 rounded-sm border border-foreground/20 px-1 py-px font-heading text-[8px] font-black uppercase tracking-[0.12em] text-muted-foreground align-middle">
+              no cuenta
+            </span>
+          ) : null}
           {isSub && event.assist ? (
             <span className="ml-1.5 text-xs font-medium">
               <span className="text-emerald-600 dark:text-emerald-400">
