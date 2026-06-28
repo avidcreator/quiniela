@@ -65,6 +65,7 @@ export function Avatar({
           alt={name}
           width={px}
           height={px}
+          suppressHydrationWarning
           className="block size-full object-cover"
         />
       </span>

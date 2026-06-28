@@ -25,6 +25,7 @@ export async function SiteHeader() {
               width={28}
               height={40}
               priority
+              suppressHydrationWarning
               className="h-full w-auto object-contain"
             />
           </span>

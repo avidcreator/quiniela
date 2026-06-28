@@ -51,6 +51,7 @@ export function WinnerCelebration({
               alt=""
               width={20}
               height={28}
+              suppressHydrationWarning
               className="h-full w-auto object-contain invert dark:invert-0"
             />
           </span>

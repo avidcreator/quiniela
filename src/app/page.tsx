@@ -568,6 +568,7 @@ function PreTournament({
               width={140}
               height={200}
               priority
+              suppressHydrationWarning
               className="h-full w-auto object-contain"
             />
           </div>
