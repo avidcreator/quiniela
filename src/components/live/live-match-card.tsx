@@ -1,20 +1,34 @@
 import Link from "next/link";
+import { Lock } from "lucide-react";
 import { TeamFlag } from "../team-flag";
 import { Avatar } from "../avatar";
 import { LiveMinute } from "./live-minute";
-import { isLiveFinal, type Match, type MatchEvent } from "@/lib/data";
+import {
+  isExtraTimePhase,
+  isLiveFinal,
+  type Match,
+  type MatchEvent,
+} from "@/lib/data";
 import type { ForecastEntry } from "@/lib/stats";
 
 export function LiveMatchCard({
   match,
   scoreA,
   scoreB,
+  totalA,
+  totalB,
+  knockout = false,
   events,
   forecast,
 }: {
   match: Match;
+  /** The score that counts. For knockouts this is the 90' (regulation) score. */
   scoreA: number;
   scoreB: number;
+  /** Running total incl. extra time (knockouts). Defaults to the counting score. */
+  totalA?: number;
+  totalB?: number;
+  knockout?: boolean;
   events: MatchEvent[];
   forecast: ForecastEntry[];
 }) {
@@ -35,6 +49,17 @@ export function LiveMatchCard({
       : match.live_status === "AET"
         ? "Tiempo extra"
         : "Concluido";
+
+  // Knockout, past 90': the big score is the regulation result (it counts); the
+  // running total and any extra-time/penalty developments are shown but tagged
+  // as not counting toward points.
+  const gTotalA = totalA ?? scoreA;
+  const gTotalB = totalB ?? scoreB;
+  const inExtra = knockout && isExtraTimePhase(match.live_status);
+  const extraTag =
+    match.live_status === "P" || match.live_status === "PEN"
+      ? "Penales"
+      : "Tiempo extra";
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
@@ -57,6 +82,12 @@ export function LiveMatchCard({
                   event={e}
                   teamA={match.team_a}
                   teamB={match.team_b}
+                  noCount={
+                    knockout &&
+                    e.type.toLowerCase() === "goal" &&
+                    e.elapsed != null &&
+                    e.elapsed > 90
+                  }
                 />
               ))}
             </ul>
@@ -74,7 +105,12 @@ export function LiveMatchCard({
           className={`relative z-10 mx-auto flex w-full flex-col overflow-hidden rounded-md border-2 bg-card shadow-xl sm:-ml-8 sm:-mr-3 sm:w-[420px] ${
             isFinal ? "border-foreground/20" : "border-primary"
           }`}
-          style={{ height: (pk.length ? 268 : 212) + (isFinal ? 0 : 44) }}
+          style={{
+            height:
+              (pk.length ? 268 : 212) +
+              (isFinal ? 0 : 44) +
+              (inExtra ? 32 : 0),
+          }}
         >
           <div
             className={`flex items-end justify-between gap-2 px-4 py-2.5 ${
@@ -115,44 +151,105 @@ export function LiveMatchCard({
             href={`/partido/${match.match_number}`}
             className="flex flex-1 items-center"
           >
-            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 sm:px-5">
-              <div className="flex flex-col items-center gap-2 text-center">
-                <TeamFlag team={match.team_a} size="lg" />
-                <span className="font-heading text-sm font-black uppercase tracking-wide">
-                  {match.team_a}
-                </span>
-              </div>
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex items-baseline gap-2 font-heading text-5xl font-extrabold tabular-nums sm:text-7xl ${
-                    isFinal ? "" : "animate-live"
-                  }`}
-                >
-                  <span>{scoreA}</span>
-                  <span className="text-muted-foreground/70">-</span>
-                  <span>{scoreB}</span>
+            {inExtra ? (
+              <div className="flex w-full flex-col justify-center gap-2 px-4 pt-1.5 sm:px-5">
+                <div className="flex items-center justify-center gap-2">
+                  <TeamFlag team={match.team_a} size="sm" />
+                  <span className="max-w-[35%] truncate font-heading text-xs font-black uppercase tracking-wide">
+                    {match.team_a}
+                  </span>
+                  <span className="px-0.5 text-[10px] font-bold text-muted-foreground">
+                    vs
+                  </span>
+                  <span className="max-w-[35%] truncate font-heading text-xs font-black uppercase tracking-wide">
+                    {match.team_b}
+                  </span>
+                  <TeamFlag team={match.team_b} size="sm" />
                 </div>
-                <span
-                  className={`mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] ${
-                    isFinal ? "text-muted-foreground" : "text-primary"
-                  }`}
-                >
-                  {isFinal ? finalLabel : isPaused ? "En pausa" : "En juego"}
-                </span>
+                <div className="overflow-hidden rounded-lg border">
+                  {/* The actual, up-to-date score (includes extra time). */}
+                  <div className="flex items-center justify-between gap-2 border-l-4 border-foreground/25 px-3 py-1.5">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="font-heading text-[9px] font-black uppercase tracking-[0.14em]">
+                        Marcador en vivo
+                      </span>
+                      <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        {extraTag} · no cuenta
+                      </span>
+                    </div>
+                    <span
+                      className={`flex items-baseline gap-1 font-heading text-4xl font-extrabold tabular-nums ${
+                        isFinal ? "" : "animate-live"
+                      }`}
+                    >
+                      <span>{gTotalA}</span>
+                      <span className="text-muted-foreground/50">-</span>
+                      <span>{gTotalB}</span>
+                    </span>
+                  </div>
+                  {/* The score that awards points — regulation (90' + stoppage).
+                      Locked once the match passes 90', so it's styled as sealed. */}
+                  <div className="flex items-center justify-between gap-2 border-t-2 border-l-4 border-primary bg-primary/10 px-3 py-1.5 ring-1 ring-inset ring-primary/20">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="inline-flex items-center gap-1 font-heading text-[9px] font-black uppercase tracking-[0.14em] text-primary">
+                        <Lock className="size-2.5" aria-hidden />
+                        Cuenta para puntos
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.12em] text-primary/70">
+                        Definitivo · 90&apos; + descuento
+                      </span>
+                    </div>
+                    <span className="flex items-center gap-1.5">
+                      <Lock className="size-3.5 text-primary/60" aria-hidden />
+                      <span className="flex items-baseline gap-1 font-heading text-4xl font-extrabold tabular-nums text-primary">
+                        <span>{scoreA}</span>
+                        <span className="text-primary/40">-</span>
+                        <span>{scoreB}</span>
+                      </span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <TeamFlag team={match.team_b} size="lg" />
-                <span className="font-heading text-sm font-black uppercase tracking-wide">
-                  {match.team_b}
-                </span>
+            ) : (
+              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 sm:px-5">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <TeamFlag team={match.team_a} size="lg" />
+                  <span className="font-heading text-sm font-black uppercase tracking-wide">
+                    {match.team_a}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`flex items-baseline gap-2 font-heading text-5xl font-extrabold tabular-nums sm:text-7xl ${
+                      isFinal ? "" : "animate-live"
+                    }`}
+                  >
+                    <span>{gTotalA}</span>
+                    <span className="text-muted-foreground/70">-</span>
+                    <span>{gTotalB}</span>
+                  </div>
+                  <span
+                    className={`mt-1 font-heading text-[9px] font-black uppercase tracking-[0.28em] ${
+                      isFinal ? "text-muted-foreground" : "text-primary"
+                    }`}
+                  >
+                    {isFinal ? finalLabel : isPaused ? "En pausa" : "En juego"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <TeamFlag team={match.team_b} size="lg" />
+                  <span className="font-heading text-sm font-black uppercase tracking-wide">
+                    {match.team_b}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </Link>
 
           {pk.length > 0 ? (
             <div className="border-t-2 border-primary/15 px-4 py-2">
               <div className="text-center font-heading text-[8px] font-black uppercase tracking-[0.24em] text-primary">
-                Tanda de penales
+                Tanda de penales{knockout ? " · no cuenta" : ""}
               </div>
               <div className="mt-1.5 space-y-1.5">
                 <PkRow team={match.team_a} kicks={pkA} slots={pkSlots} />
@@ -180,7 +277,7 @@ export function LiveMatchCard({
               Tabla proyectada
             </span>
             <span className="rounded-sm border border-dashed border-foreground/40 px-1 font-heading text-[9px] font-black tabular-nums">
-              si termina {scoreA}–{scoreB}
+              {inExtra ? "al 90'" : "si termina"} {scoreA}–{scoreB}
             </span>
           </div>
           <div className="mt-auto flex items-end gap-2 overflow-x-auto pb-1">
@@ -287,14 +384,18 @@ function EventPill({
   event,
   teamA,
   teamB,
+  noCount = false,
 }: {
   event: MatchEvent;
   teamA: string;
   teamB: string;
+  noCount?: boolean;
 }) {
   const team = event.side === "a" ? teamA : event.side === "b" ? teamB : null;
   const { icon, accent } = eventIcon(event);
-  const isGoal = event.type.toLowerCase() === "goal";
+  // A post-90' (extra-time) knockout goal is shown, but it doesn't count toward
+  // points, so it's rendered muted rather than with the prominent goal styling.
+  const isGoal = event.type.toLowerCase() === "goal" && !noCount;
   // API-Football substitutions: `player` is who came OFF, `assist` who came ON.
   const isSub = event.type.toLowerCase() === "subst";
   const minute =
@@ -341,10 +442,17 @@ function EventPill({
         </span>
         <span className="min-w-0 truncate">
           <span
-            className={`font-heading text-[11px] font-black uppercase tracking-wide ${accent}`}
+            className={`font-heading text-[11px] font-black uppercase tracking-wide ${
+              noCount ? "text-muted-foreground" : accent
+            }`}
           >
             {eventTitle(event)}
           </span>
+          {noCount ? (
+            <span className="ml-1.5 rounded-sm border border-foreground/20 px-1 py-px font-heading text-[8px] font-black uppercase tracking-[0.12em] text-muted-foreground align-middle">
+              no cuenta
+            </span>
+          ) : null}
           {isSub && event.assist ? (
             <span className="ml-1.5 text-xs font-medium">
               <span className="text-emerald-600 dark:text-emerald-400">
