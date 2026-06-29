@@ -36,8 +36,11 @@ export function LiveMatchCard({
     (e.comments ?? "").toLowerCase().includes("penalty shootout");
   const pk = events.filter(isShootoutKick);
   const feedEvents = pk.length ? events.filter((e) => !isShootoutKick(e)) : events;
-  const pkA = pk.filter((e) => e.side === "a");
-  const pkB = pk.filter((e) => e.side === "b");
+  // The event feed arrives newest-first; draw shootout kicks in the order they
+  // were taken (ascending sort_index, which encodes the kick number).
+  const byKick = (x: MatchEvent, y: MatchEvent) => x.sort_index - y.sort_index;
+  const pkA = pk.filter((e) => e.side === "a").sort(byKick);
+  const pkB = pk.filter((e) => e.side === "b").sort(byKick);
   const pkSlots = pk.length ? Math.max(5, pkA.length, pkB.length) : 0;
   const hasFeed = feedEvents.length > 0;
   const maxForecast = Math.max(1, ...forecast.map((f) => f.points));
