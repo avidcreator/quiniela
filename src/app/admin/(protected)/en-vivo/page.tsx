@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTables } from "@/lib/phase";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiConfigured } from "@/lib/live/api-football";
@@ -123,6 +124,24 @@ export default async function EnVivoPage() {
         <div className="mt-3 text-xs text-muted-foreground">
           {mapped.length}/{all.length} partidos vinculados ·{" "}
           {live.length} en vivo ahora
+        </div>
+      </section>
+
+      {/* Live-card simulator (admin only) */}
+      <section className="rounded-2xl border border-dashed bg-muted/20 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              Simulador en vivo
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Previsualiza la tarjeta en vivo con datos ficticios (tiempo extra,
+              penales, etc.). Solo visible para ti; no afecta el sitio.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/admin/en-vivo/simulador">Abrir simulador</Link>
+          </Button>
         </div>
       </section>
     </div>

@@ -26,8 +26,10 @@ export function LiveMinute({
     const base = elapsed;
     const t0 = new Date(updatedAt).getTime();
     const tick = () => {
-      const add = Math.floor((Date.now() - t0) / 60000);
-      setMins(base + Math.max(0, add));
+      // Cap the local drift so a stale poll can't run the clock away (e.g. a
+      // match that quietly ended showing "135′"). A live feed refreshes often.
+      const add = Math.min(6, Math.max(0, Math.floor((Date.now() - t0) / 60000)));
+      setMins(base + add);
     };
     tick();
     const id = setInterval(tick, 15000);
@@ -41,6 +43,27 @@ export function LiveMinute({
   // `elapsed: null` here, so without these the clock falls back to "0′".
   if (status === "INT") return <span className={word}>Interrumpido</span>;
   if (status === "SUSP") return <span className={word}>Suspendido</span>;
+
+  // Extra time: show a clock relative to the start of ET (so it reads "T. EXTRA
+  // 5′", not a confusing continuous "95′"/"135′"). Regulation ended at 90'.
+  if (status === "ET") {
+    const etMin = Math.max(1, mins - 90);
+    return (
+      <span
+        suppressHydrationWarning
+        className="flex flex-col items-end gap-0.5 leading-none"
+      >
+        <span className="font-heading text-[10px] font-black uppercase tracking-[0.18em]">
+          T. Extra
+        </span>
+        <span className="flex items-baseline font-mono text-3xl font-black tabular-nums tracking-tight sm:text-4xl">
+          {etMin}
+          {extra ? <span className="ml-px text-xl sm:text-2xl">+{extra}</span> : null}
+          <span className="animate-live ml-0.5 text-xl sm:text-2xl">′</span>
+        </span>
+      </span>
+    );
+  }
 
   const clock = (
     <span
