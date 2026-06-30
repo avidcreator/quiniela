@@ -159,6 +159,10 @@ export default async function SimuladorPage({
     live_home: totalA,
     live_away: totalB,
     live_updated_at: new Date().toISOString(),
+    final_a: null,
+    final_b: null,
+    pen_a: null,
+    pen_b: null,
   };
 
   const forecast: ForecastEntry[] = [

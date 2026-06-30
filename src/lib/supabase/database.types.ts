@@ -288,6 +288,8 @@ export type Database = {
           api_fixture_id: number | null
           api_home_is_a: boolean | null
           completed_at: string | null
+          final_a: number | null
+          final_b: number | null
           kickoff_at: string
           live_away: number | null
           live_elapsed: number | null
@@ -296,6 +298,8 @@ export type Database = {
           live_status: string | null
           live_updated_at: string | null
           match_number: number
+          pen_a: number | null
+          pen_b: number | null
           round: string
           team_a: string
           team_b: string
@@ -306,6 +310,8 @@ export type Database = {
           api_fixture_id?: number | null
           api_home_is_a?: boolean | null
           completed_at?: string | null
+          final_a?: number | null
+          final_b?: number | null
           kickoff_at: string
           live_away?: number | null
           live_elapsed?: number | null
@@ -314,6 +320,8 @@ export type Database = {
           live_status?: string | null
           live_updated_at?: string | null
           match_number: number
+          pen_a?: number | null
+          pen_b?: number | null
           round: string
           team_a: string
           team_b: string
@@ -324,6 +332,8 @@ export type Database = {
           api_fixture_id?: number | null
           api_home_is_a?: boolean | null
           completed_at?: string | null
+          final_a?: number | null
+          final_b?: number | null
           kickoff_at?: string
           live_away?: number | null
           live_elapsed?: number | null
@@ -332,6 +342,8 @@ export type Database = {
           live_status?: string | null
           live_updated_at?: string | null
           match_number?: number
+          pen_a?: number | null
+          pen_b?: number | null
           round?: string
           team_a?: string
           team_b?: string

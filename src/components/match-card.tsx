@@ -3,7 +3,7 @@ import { TeamFlag } from "./team-flag";
 import { Avatar } from "./avatar";
 import { KickoffDate } from "./kickoff-date";
 import { commentatorLine } from "@/lib/stats";
-import type { Match } from "@/lib/data";
+import type { KnockoutResult, Match } from "@/lib/data";
 import type { PredictionWithPoints } from "@/lib/stats";
 
 export function UpcomingMatchCard({
@@ -100,9 +100,11 @@ function RootingColumn({
 export function RecentResultCard({
   match,
   predictions,
+  result,
 }: {
   match: Match;
   predictions: PredictionWithPoints[];
+  result?: KnockoutResult | null;
 }) {
   if (match.actual_a === null || match.actual_b === null) return null;
 
@@ -111,6 +113,14 @@ export function RecentResultCard({
   const soloStriker = strikers.length === 1 ? strikers[0] : null;
   const quote = commentatorLine(match, predictions);
   const group = match.group;
+  // Knockout matches decided beyond 90' show the extra-time / penalty outcome.
+  const decided = result && result.decidedBy !== "reg" ? result : null;
+  const advancer =
+    decided?.winner === "a"
+      ? match.team_a
+      : decided?.winner === "b"
+        ? match.team_b
+        : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -130,24 +140,31 @@ export function RecentResultCard({
             align="start"
             group={group}
           />
-          <div className="flex items-center font-heading font-black leading-none tabular-nums">
-            <span
-              className={`text-5xl sm:text-7xl ${
-                match.actual_a < match.actual_b ? "text-muted-foreground" : ""
-              }`}
-            >
-              {match.actual_a}
-            </span>
-            <span className="mx-1 text-2xl text-muted-foreground sm:mx-2 sm:text-3xl">
-              –
-            </span>
-            <span
-              className={`text-5xl sm:text-7xl ${
-                match.actual_b < match.actual_a ? "text-muted-foreground" : ""
-              }`}
-            >
-              {match.actual_b}
-            </span>
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center font-heading font-black leading-none tabular-nums">
+              <span
+                className={`text-5xl sm:text-7xl ${
+                  match.actual_a < match.actual_b ? "text-muted-foreground" : ""
+                }`}
+              >
+                {match.actual_a}
+              </span>
+              <span className="mx-1 text-2xl text-muted-foreground sm:mx-2 sm:text-3xl">
+                –
+              </span>
+              <span
+                className={`text-5xl sm:text-7xl ${
+                  match.actual_b < match.actual_a ? "text-muted-foreground" : ""
+                }`}
+              >
+                {match.actual_b}
+              </span>
+            </div>
+            {decided ? (
+              <span className="whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-heading text-[8px] font-black uppercase tracking-[0.16em] text-primary">
+                90&apos; · cuenta para puntos
+              </span>
+            ) : null}
           </div>
           <BigTeam
             team={match.team_b}
@@ -158,6 +175,22 @@ export function RecentResultCard({
 
           {soloStriker ? <SoloStamp player={soloStriker} /> : null}
         </div>
+
+        {decided ? (
+          <div className="border-t-2 border-dashed bg-primary/5 px-4 py-2 text-center font-heading text-xs font-black uppercase tracking-[0.16em]">
+            <span className="text-muted-foreground">
+              {decided.decidedBy === "pen" ? "Penales " : "Tiempo extra "}
+            </span>
+            <span className="tabular-nums text-foreground">
+              {decided.decidedBy === "pen"
+                ? `${decided.penA}–${decided.penB}`
+                : `${decided.finalA}–${decided.finalB}`}
+            </span>
+            {advancer ? (
+              <span className="text-primary"> · Avanza {advancer}</span>
+            ) : null}
+          </div>
+        ) : null}
 
         {quote ? (
           <div className="border-t border-dashed bg-card px-4 py-2 text-center font-heading text-xs font-bold uppercase tracking-[0.22em] text-foreground">

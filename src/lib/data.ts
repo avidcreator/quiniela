@@ -24,6 +24,12 @@ export type Match = {
   live_home: number | null;
   live_away: number | null;
   live_updated_at: string | null;
+  // Phase 2 knockouts (admin-entered, display-only): final score incl. extra
+  // time, and penalty-shootout score. Null = decided in regulation.
+  final_a: number | null;
+  final_b: number | null;
+  pen_a: number | null;
+  pen_b: number | null;
 };
 
 export type MatchEvent = {
@@ -77,9 +83,11 @@ export const LIVE_STALE_MS = 20 * 60 * 1000;
 /** Whether to render this match in the "En vivo" section: it's currently
  *  live (and still being updated), or it ended within the last 5 minutes. */
 export function isLiveVisible(m: Match, now: number): boolean {
-  // A registered result (admin only enters one once a match is over) is the
-  // authoritative "this match is done" signal — never show it as live.
-  if (isCompleted(m)) return false;
+  // `completed_at` (admin marked the match ended) is the authoritative "done"
+  // signal — never show it as live. For phase 2 the 90' score can be entered
+  // while the match plays on (extra time / penalties), so this is keyed on
+  // ended, not on whether a score exists. Phase 1 sets both together.
+  if (m.completed_at != null) return false;
   if (isLive(m)) {
     // Guard against matches stuck in a live status (clock ticking forever): if
     // the feed hasn't touched it recently, it's not actually live anymore.
@@ -144,6 +152,58 @@ export function regulationGoals(events: MatchEvent[]): { a: number; b: number } 
   return { a, b };
 }
 
+export type KnockoutResult = {
+  /** How the match was ultimately decided. */
+  decidedBy: "reg" | "et" | "pen";
+  /** Final score including extra time (penalties shown separately). */
+  finalA: number;
+  finalB: number;
+  /** Penalty-shootout score (scored kicks per side). */
+  penA: number;
+  penB: number;
+  /** Side that advanced, or null if undetermined. */
+  winner: "a" | "b" | null;
+};
+
+/**
+ * Summarize how a COMPLETED knockout match was decided, from the admin-entered
+ * columns, for display alongside the points-counting (regulation) score.
+ *   - `actual_a/actual_b` — regulation score (the only thing that awards points)
+ *   - `final_a/final_b`    — final score incl. extra time (null = no extra time)
+ *   - `pen_a/pen_b`        — penalty-shootout score (null = no shootout)
+ * Blank ET/penalty fields mean the match was decided in regulation.
+ */
+export function knockoutResult(m: Match): KnockoutResult | null {
+  if (!isCompleted(m)) return null;
+  const reg = { a: m.actual_a, b: m.actual_b };
+
+  const wentToPens = m.pen_a != null && m.pen_b != null;
+  const wentToEt =
+    m.final_a != null &&
+    m.final_b != null &&
+    (m.final_a !== reg.a || m.final_b !== reg.b);
+  const decidedBy = wentToPens ? "pen" : wentToEt ? "et" : "reg";
+
+  const finalA = m.final_a ?? reg.a;
+  const finalB = m.final_b ?? reg.b;
+  const penA = m.pen_a ?? 0;
+  const penB = m.pen_b ?? 0;
+
+  const winner = wentToPens
+    ? penA === penB
+      ? null
+      : penA > penB
+        ? "a"
+        : "b"
+    : finalA === finalB
+      ? null
+      : finalA > finalB
+        ? "a"
+        : "b";
+
+  return { decidedBy, finalA, finalB, penA, penB, winner };
+}
+
 export type Player = { id: string; name: string; avatar_url: string | null };
 
 export type Prediction = {
@@ -193,7 +253,7 @@ const COMMON_MATCH_COLUMNS =
  */
 function matchColumns(phase: Phase): string {
   return phase === "phase_two"
-    ? `${COMMON_MATCH_COLUMNS}, round`
+    ? `${COMMON_MATCH_COLUMNS}, round, final_a, final_b, pen_a, pen_b`
     : `${COMMON_MATCH_COLUMNS}, group`;
 }
 

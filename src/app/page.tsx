@@ -6,6 +6,7 @@ import {
   isLive,
   isLiveVisible,
   isExtraTimePhase,
+  knockoutResult,
   liveScore,
   regulationGoals,
 } from "@/lib/data";
@@ -101,22 +102,25 @@ export default async function Home() {
   const liveBlocks = liveMatches.map((m) => {
     const total = liveScore(m) ?? { a: 0, b: 0 };
     const events = liveEvents.filter((e) => e.match_number === m.match_number);
-    // For knockouts, the score that awards points is the 90' (regulation)
-    // result. While still in regulation the running total IS that; once in extra
-    // time / penalties, freeze the regulation score from the (settled) feed.
-    const reg =
-      knockout && isExtraTimePhase(m.live_status)
+    // The score that awards points is the 90' (regulation) result. Once the
+    // admin has entered it, that locked value wins; otherwise — while in extra
+    // time / penalties — reconstruct it from the (settled) feed; in regulation
+    // the running total IS the regulation score.
+    const regEntered = m.actual_a != null && m.actual_b != null;
+    const reg = regEntered
+      ? { a: m.actual_a as number, b: m.actual_b as number }
+      : knockout && isExtraTimePhase(m.live_status)
         ? regulationGoals(events)
         : total;
-    // Never let the regulation score exceed the running total (feed safety).
-    const scoreA = Math.min(reg.a, total.a);
-    const scoreB = Math.min(reg.b, total.b);
+    const scoreA = reg.a;
+    const scoreB = reg.b;
+    // The running total can't be below the locked 90' score.
     return {
       match: m,
       scoreA,
       scoreB,
-      totalA: total.a,
-      totalB: total.b,
+      totalA: Math.max(total.a, scoreA),
+      totalB: Math.max(total.b, scoreB),
       knockout,
       events,
       forecast: forecastStandings(snap, m.match_number, scoreA, scoreB),
@@ -144,7 +148,18 @@ export default async function Home() {
     const bt = new Date(b.completed_at ?? b.kickoff_at).getTime();
     return at - bt;
   });
-  const recent = [...completedAsc].reverse().slice(0, 6);
+  // A knockout match can be scored (90') while still live (extra time). Keep
+  // those out of "Últimos resultados" so they don't show as live AND finished.
+  const liveSet = new Set(liveMatches.map((m) => m.match_number));
+  const recent = [...completedAsc]
+    .reverse()
+    .filter((m) => !liveSet.has(m.match_number))
+    .slice(0, 6);
+
+  // For phase 2, recent knockout cards also show how the match was decided
+  // (extra time / penalties), from the admin-entered final/penalty columns.
+  const recentResult = (m: (typeof recent)[number]) =>
+    knockout ? knockoutResult(m) : null;
 
   const leaderboard = computeLeaderboard(snap);
   const completedCount = snap.matches.filter(isCompleted).length;
@@ -290,6 +305,7 @@ export default async function Home() {
                     <RecentResultCard
                       match={m}
                       predictions={computeMatchPredictions(snap, m.match_number)}
+                      result={recentResult(m)}
                     />
                   </div>
                 ))}
