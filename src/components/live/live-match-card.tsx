@@ -63,6 +63,10 @@ export function LiveMatchCard({
     match.live_status === "P" || match.live_status === "PEN"
       ? "Penales"
       : "Tiempo extra";
+  // Once the 90' score is locked and we're in extra time / penalties, the points
+  // are settled — there's nothing left to project, so hide the predicted winners.
+  const regLocked = match.actual_a != null && match.actual_b != null;
+  const hideForecast = inExtra && regLocked;
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
@@ -273,8 +277,22 @@ export function LiveMatchCard({
           ) : null}
         </div>
 
-        {/* Tabla proyectada — vertical dashed, pulsing bars */}
+        {/* Tabla proyectada — vertical dashed, pulsing bars. Hidden once the
+            90' result is locked (points are settled, nothing to project). */}
         <div className="flex h-[212px] min-w-0 flex-col opacity-80 transition-opacity duration-200 hover:opacity-100">
+          {hideForecast ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+              <Lock className="size-4 text-primary" aria-hidden />
+              <span className="font-heading text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+                Puntos definidos
+              </span>
+              <span className="px-2 text-[10px] font-medium text-muted-foreground">
+                El marcador del 90' ({scoreA}–{scoreB}) ya cuenta; lo demás no
+                cambia los puntos.
+              </span>
+            </div>
+          ) : (
+          <>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
               Tabla proyectada
@@ -335,6 +353,8 @@ export function LiveMatchCard({
               );
             })}
           </div>
+          </>
+          )}
         </div>
     </div>
   );
