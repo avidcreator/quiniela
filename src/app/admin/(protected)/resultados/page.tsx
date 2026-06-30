@@ -1,13 +1,18 @@
 import { getActivePhase, getTables } from "@/lib/phase";
 import { ROUNDS } from "@/lib/rounds";
 import { createServiceClient } from "@/lib/supabase/server";
-import { loadSnapshot } from "@/lib/data";
+import { loadSnapshot, loadMatchEvents, liveScore, type Match } from "@/lib/data";
 import { computeLeaderboard } from "@/lib/stats";
 import { Avatar } from "@/components/avatar";
 import { KickoffDate } from "@/components/kickoff-date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { clearScoreAction, setScoreAction } from "./actions";
+import {
+  clearScoreAction,
+  endMatchAction,
+  resumeMatchAction,
+  setScoreAction,
+} from "./actions";
 import { WinnerDialog } from "./winner-dialog";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +24,44 @@ export default async function ResultadosPage() {
   const supabase = createServiceClient();
   const TABLES = await getTables();
   const columns = isTwo
-    ? "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, round"
+    ? "match_number, kickoff_at, team_a, team_b, actual_a, actual_b, completed_at, round, final_a, final_b, pen_a, pen_b, live_home, live_away, api_home_is_a, live_status"
     : "match_number, kickoff_at, team_a, team_b, actual_a, actual_b";
   const { data: matchesData } = await supabase
     .from(TABLES.matches)
     .select(columns)
     .order("kickoff_at", { ascending: true });
   const matches = (matchesData ?? []) as unknown as Match[];
+
+  // Phase 2: suggest the final (extra-time) and penalty scores from the live
+  // feed, so the admin usually just confirms. Already-entered values win.
+  const pkEvents = isTwo
+    ? await loadMatchEvents(
+        matches.filter((m) => m.live_status === "PEN").map((m) => m.match_number),
+      )
+    : [];
+  const suggestFor = (m: Match): PkSuggestion => {
+    const etOrPen = m.live_status === "AET" || m.live_status === "PEN";
+    const total = etOrPen ? liveScore(m) : null;
+    let penA = m.pen_a;
+    let penB = m.pen_b;
+    if (penA == null && m.live_status === "PEN") {
+      const ev = pkEvents.filter(
+        (e) =>
+          e.match_number === m.match_number &&
+          (e.comments ?? "").toLowerCase().includes("penalty shootout"),
+      );
+      const miss = (e: { detail: string | null }) =>
+        /(missed|saved|fallad)/i.test(e.detail ?? "");
+      penA = ev.filter((e) => e.side === "a" && !miss(e)).length;
+      penB = ev.filter((e) => e.side === "b" && !miss(e)).length;
+    }
+    return {
+      finalA: m.final_a ?? total?.a ?? null,
+      finalB: m.final_b ?? total?.b ?? null,
+      penA: penA ?? null,
+      penB: penB ?? null,
+    };
+  };
 
   const snap = await loadSnapshot();
   const leaderboard = computeLeaderboard(snap);
@@ -102,7 +138,13 @@ export default async function ResultadosPage() {
           Pendientes ({pending.length})
         </h2>
         {pending.length > 0 ? (
-          <MatchListing matches={pending} completed={false} grouped={isTwo} />
+          <MatchListing
+            matches={pending}
+            completed={false}
+            grouped={isTwo}
+            knockout={isTwo}
+            suggestFor={suggestFor}
+          />
         ) : (
           <p className="mt-4 rounded-2xl border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
             No hay partidos pendientes. Si aún no subes el calendario, hazlo
@@ -116,7 +158,13 @@ export default async function ResultadosPage() {
           Completados ({completed.length})
         </h2>
         {completed.length > 0 ? (
-          <MatchListing matches={completed} completed={true} grouped={isTwo} />
+          <MatchListing
+            matches={completed}
+            completed={true}
+            grouped={isTwo}
+            knockout={isTwo}
+            suggestFor={suggestFor}
+          />
         ) : (
           <p className="mt-4 text-sm text-muted-foreground">
             Aún no hay marcadores ingresados.
@@ -127,14 +175,11 @@ export default async function ResultadosPage() {
   );
 }
 
-type Match = {
-  match_number: number;
-  kickoff_at: string;
-  team_a: string;
-  team_b: string;
-  actual_a: number | null;
-  actual_b: number | null;
-  round?: string | null;
+type PkSuggestion = {
+  finalA: number | null;
+  finalB: number | null;
+  penA: number | null;
+  penB: number | null;
 };
 
 /** Flat list in phase 1; grouped under round subheadings in phase 2. */
@@ -142,19 +187,26 @@ function MatchListing({
   matches,
   completed,
   grouped,
+  knockout = false,
+  suggestFor,
 }: {
   matches: Match[];
   completed: boolean;
   grouped: boolean;
+  knockout?: boolean;
+  suggestFor?: (m: Match) => PkSuggestion;
 }) {
+  const row = (m: Match) => (
+    <MatchRow
+      key={m.match_number}
+      match={m}
+      completed={completed}
+      knockout={knockout}
+      suggest={suggestFor?.(m)}
+    />
+  );
   if (!grouped) {
-    return (
-      <ul className="mt-4 space-y-3">
-        {matches.map((m) => (
-          <MatchRow key={m.match_number} match={m} completed={completed} />
-        ))}
-      </ul>
-    );
+    return <ul className="mt-4 space-y-3">{matches.map(row)}</ul>;
   }
   return (
     <div className="mt-4 space-y-6">
@@ -166,11 +218,7 @@ function MatchListing({
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {round.label}
             </h3>
-            <ul className="space-y-3">
-              {sub.map((m) => (
-                <MatchRow key={m.match_number} match={m} completed={completed} />
-              ))}
-            </ul>
+            <ul className="space-y-3">{sub.map(row)}</ul>
           </div>
         );
       })}
@@ -178,7 +226,18 @@ function MatchListing({
   );
 }
 
-function MatchRow({ match, completed }: { match: Match; completed: boolean }) {
+function MatchRow({
+  match,
+  completed,
+  knockout = false,
+  suggest,
+}: {
+  match: Match;
+  completed: boolean;
+  knockout?: boolean;
+  suggest?: PkSuggestion;
+}) {
+  const ended = match.completed_at != null;
   return (
     <li className="rounded-2xl border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -197,47 +256,110 @@ function MatchRow({ match, completed }: { match: Match; completed: boolean }) {
             />
           </div>
         </div>
-        {completed ? (
+        {knockout ? (
+          ended ? (
+            <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
+              Terminado
+            </span>
+          ) : completed ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              En vivo · 90&apos; guardado
+            </span>
+          ) : null
+        ) : completed ? (
           <span className="rounded-full bg-accent/40 px-3 py-1 text-xs font-semibold text-accent-foreground">
             Completado
           </span>
         ) : null}
       </div>
 
-      <form
-        action={setScoreAction}
-        className="mt-3 flex flex-wrap items-end gap-3"
-      >
+      <form action={setScoreAction} className="mt-3 space-y-3">
         <input type="hidden" name="match_number" value={match.match_number} />
-        <ScoreField
-          label={match.team_a}
-          name="actual_a"
-          defaultValue={match.actual_a}
-        />
-        <span className="pb-2 text-muted-foreground">–</span>
-        <ScoreField
-          label={match.team_b}
-          name="actual_b"
-          defaultValue={match.actual_b}
-        />
-        <Button type="submit" size="sm">
-          {completed ? "Actualizar" : "Guardar"}
-        </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          {knockout ? (
+            <span className="w-full text-[11px] font-semibold uppercase tracking-wide text-primary">
+              Marcador 90' · cuenta para puntos
+            </span>
+          ) : null}
+          <ScoreField
+            label={match.team_a}
+            name="actual_a"
+            defaultValue={match.actual_a}
+            required
+          />
+          <span className="pb-2 text-muted-foreground">–</span>
+          <ScoreField
+            label={match.team_b}
+            name="actual_b"
+            defaultValue={match.actual_b}
+            required
+          />
+          {!knockout ? (
+            <Button type="submit" size="sm">
+              {completed ? "Actualizar" : "Guardar"}
+            </Button>
+          ) : null}
+        </div>
+
+        {knockout ? (
+          <>
+            <div className="flex flex-wrap items-end gap-3 border-t border-dashed pt-3">
+              <span className="w-full text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Final con tiempo extra (opcional)
+              </span>
+              <ScoreField label={match.team_a} name="final_a" defaultValue={suggest?.finalA ?? null} />
+              <span className="pb-2 text-muted-foreground">–</span>
+              <ScoreField label={match.team_b} name="final_b" defaultValue={suggest?.finalB ?? null} />
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <span className="w-full text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Penales (opcional)
+              </span>
+              <ScoreField label={match.team_a} name="pen_a" defaultValue={suggest?.penA ?? null} />
+              <span className="pb-2 text-muted-foreground">–</span>
+              <ScoreField label={match.team_b} name="pen_b" defaultValue={suggest?.penB ?? null} />
+            </div>
+            <Button type="submit" size="sm">
+              {completed ? "Actualizar" : "Guardar"}
+            </Button>
+          </>
+        ) : null}
       </form>
 
-      {completed ? (
-        <form action={clearScoreAction} className="mt-2">
-          <input type="hidden" name="match_number" value={match.match_number} />
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive"
-          >
-            Borrar marcador
-          </Button>
-        </form>
-      ) : null}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {knockout && completed ? (
+          ended ? (
+            <form action={resumeMatchAction}>
+              <input type="hidden" name="match_number" value={match.match_number} />
+              <Button type="submit" variant="outline" size="sm">
+                Reanudar (volver a en vivo)
+              </Button>
+            </form>
+          ) : (
+            <form action={endMatchAction}>
+              <input type="hidden" name="match_number" value={match.match_number} />
+              <Button type="submit" size="sm">
+                Finalizar partido
+              </Button>
+            </form>
+          )
+        ) : null}
+
+        {completed ? (
+          <form action={clearScoreAction}>
+            <input type="hidden" name="match_number" value={match.match_number} />
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              Borrar marcador
+            </Button>
+          </form>
+        ) : null}
+      </div>
     </li>
   );
 }
@@ -246,10 +368,12 @@ function ScoreField({
   label,
   name,
   defaultValue,
+  required = false,
 }: {
   label: string;
   name: string;
   defaultValue: number | null;
+  required?: boolean;
 }) {
   return (
     <label className="flex flex-col gap-1">
@@ -261,7 +385,7 @@ function ScoreField({
         min={0}
         max={20}
         defaultValue={defaultValue ?? undefined}
-        required
+        required={required}
         className="w-20 text-center"
       />
     </label>
